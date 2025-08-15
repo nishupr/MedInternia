@@ -1,0 +1,28 @@
+{
+  "name": "med-internia-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
+    "@mui/system": "^7.3.1",
+    "axios": "latest",
+    "framer-motion": "^12.23.12",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "eslint": "latest",
+    "eslint-config-next": "latest"
+  }
+}

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import connectDB from './utils/database';
+import { createDefaultBadges } from './utils/createDefaultBadges';
 
 // Import routes
 import apiRoutes from './routes/api';
@@ -13,8 +14,24 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
-// Connect to database
-connectDB();
+// Initialize application
+const initializeApp = async () => {
+  try {
+    // Connect to database
+    await connectDB();
+    
+    // Create default badges if they don't exist
+    await createDefaultBadges();
+    
+    console.log('Application initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize application:', error);
+    process.exit(1);
+  }
+};
+
+// Initialize the app
+initializeApp();
 
 // Middleware
 app.use(helmet());
@@ -27,8 +44,19 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
+    message: 'Doctor-Intern Collaboration Platform is running',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    version: '3.0.0',
+    features: [
+      'Medical case discussions',
+      'Peer review system', 
+      'Badge & certification system',
+      'Job opportunities board',
+      'Webinars & AMAs',
+      'AI-powered case suggestions',
+      'Live video conferencing'
+    ]
   });
 });
 
@@ -36,7 +64,9 @@ app.use('/api', apiRoutes);
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Doctor-Intern Collaboration Platform running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`API docs: http://localhost:${PORT}/api`);
 });
 
 export default app;

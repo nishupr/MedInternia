@@ -21,16 +21,34 @@ export interface IUser extends Document {
   points: number;
   totalRatings: number;
   averageRating: number;
+  // Collaboration platform fields
+  profileScore: number; // Overall profile completeness score
+  streak: number; // Current active streak (days)
+  longestStreak: number;
+  casesAnalyzed: number;
+  upvotesReceived: number;
+  peerReviewsGiven: number;
+  peerReviewsReceived: number;
+  certificatesEarned: number;
+  linkedInProfile?: string;
+  githubProfile?: string;
+  bio?: string;
+  profilePicture?: string;
   // Doctor specific fields
   specialization?: string;
   licenseNumber?: string;
   experience?: number;
   qualifications?: string[];
+  isVerifiedDoctor?: boolean; // KYC verification
+  verificationDocuments?: string[];
+  mentoringCredits?: number; // Credits for mentoring interns
   // Intern specific fields
   medicalSchool?: string;
   yearOfStudy?: number;
   interests?: string[];
   mentorDoctor?: mongoose.Types.ObjectId;
+  academicAchievements?: string[];
+  careerGoals?: string[];
   // Patient specific fields
   emergencyContact?: {
     name?: string;
@@ -79,7 +97,7 @@ const UserSchema = new Schema<IUser>({
     required: [true, 'Email is required'],
     lowercase: true,
     match: [
-      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+      /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
       'Please add a valid email'
     ]
   },
@@ -123,6 +141,64 @@ const UserSchema = new Schema<IUser>({
     min: [0, 'Average rating cannot be negative'],
     max: [5, 'Average rating cannot exceed 5']
   },
+  // Collaboration platform fields
+  profileScore: {
+    type: Number,
+    default: 0,
+    min: [0, 'Profile score cannot be negative'],
+    max: [100, 'Profile score cannot exceed 100']
+  },
+  streak: {
+    type: Number,
+    default: 0,
+    min: [0, 'Streak cannot be negative']
+  },
+  longestStreak: {
+    type: Number,
+    default: 0,
+    min: [0, 'Longest streak cannot be negative']
+  },
+  casesAnalyzed: {
+    type: Number,
+    default: 0,
+    min: [0, 'Cases analyzed cannot be negative']
+  },
+  upvotesReceived: {
+    type: Number,
+    default: 0,
+    min: [0, 'Upvotes received cannot be negative']
+  },
+  peerReviewsGiven: {
+    type: Number,
+    default: 0,
+    min: [0, 'Peer reviews given cannot be negative']
+  },
+  peerReviewsReceived: {
+    type: Number,
+    default: 0,
+    min: [0, 'Peer reviews received cannot be negative']
+  },
+  certificatesEarned: {
+    type: Number,
+    default: 0,
+    min: [0, 'Certificates earned cannot be negative']
+  },
+  linkedInProfile: {
+    type: String,
+    match: [/^https:\/\/(www\.)?linkedin\.com\/.*/, 'Please provide a valid LinkedIn URL']
+  },
+  githubProfile: {
+    type: String,
+    match: [/^https:\/\/(www\.)?github\.com\/.*/, 'Please provide a valid GitHub URL']
+  },
+  bio: {
+    type: String,
+    maxlength: [500, 'Bio cannot exceed 500 characters']
+  },
+  profilePicture: {
+    type: String,
+    match: [/^https?:\/\/.+/, 'Please provide a valid profile picture URL']
+  },
   // Doctor specific fields
   specialization: {
     type: String,
@@ -144,6 +220,18 @@ const UserSchema = new Schema<IUser>({
   qualifications: [{
     type: String
   }],
+  isVerifiedDoctor: {
+    type: Boolean,
+    default: false
+  },
+  verificationDocuments: [{
+    type: String
+  }],
+  mentoringCredits: {
+    type: Number,
+    default: 0,
+    min: [0, 'Mentoring credits cannot be negative']
+  },
   // Intern specific fields
   medicalSchool: {
     type: String,
@@ -166,6 +254,12 @@ const UserSchema = new Schema<IUser>({
     type: Schema.Types.ObjectId,
     ref: 'User'
   },
+  academicAchievements: [{
+    type: String
+  }],
+  careerGoals: [{
+    type: String
+  }],
   // Patient specific fields
   emergencyContact: EmergencyContactSchema,
   medicalHistory: [{

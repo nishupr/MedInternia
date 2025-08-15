@@ -82,21 +82,21 @@ echo "Doctor Token: $doctorToken"
 
 #### Login as Intern 1:
 ```powershell
-$intern1Login = Invoke-WebRequest -Uri "http://localhost:3000/api/auth/login" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"alex.intern@medschool.edu","password":"password123"}'
+$intern1Login = Invoke-WebRequest -Uri "http://localhost:3000/api/auth/login" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"bhagya.intern@medschool.edu","password":"password123"}'
 $intern1Token = ($intern1Login.Content | ConvertFrom-Json).data.token
 echo "Intern 1 Token: $intern1Token"
 ```
 
 #### Login as Intern 2:
 ```powershell
-$intern2Login = Invoke-WebRequest -Uri "http://localhost:3000/api/auth/login" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"sarah.intern@medschool.edu","password":"password123"}'
+$intern2Login = Invoke-WebRequest -Uri "http://localhost:3000/api/auth/login" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"anushka.intern@medschool.edu","password":"password123"}'
 $intern2Token = ($intern2Login.Content | ConvertFrom-Json).data.token
 echo "Intern 2 Token: $intern2Token"
 ```
 
 #### Login as Patient:
 ```powershell
-$patientLogin = Invoke-WebRequest -Uri "http://localhost:3000/api/auth/login" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"john.patient@email.com","password":"password123"}'
+$patientLogin = Invoke-WebRequest -Uri "http://localhost:3000/api/auth/login" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"email":"anirudh.patient@email.com","password":"password123"}'
 $patientToken = ($patientLogin.Content | ConvertFrom-Json).data.token
 echo "Patient Token: $patientToken"
 ```

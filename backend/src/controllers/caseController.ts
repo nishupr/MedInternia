@@ -535,3 +535,177 @@ export const getMyCases = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+// Add follow-up to case
+export const addFollowUp = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { content, outcome, images } = req.body;
+    const user = req.user!;
+
+    const caseData = await Case.findById(id);
+    if (!caseData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    // Only the original case author or doctors can add follow-ups
+    const userIdString = (user._id as any).toString();
+    const canAddFollowUp = caseData.doctor.toString() === userIdString || user.userType === 'doctor';
+
+    if (!canAddFollowUp) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the case author or doctors can add follow-ups'
+      });
+    }
+
+    const followUp = {
+      author: user._id as any,
+      content,
+      outcome,
+      images: images || [],
+      createdAt: new Date()
+    };
+
+    caseData.followUps.push(followUp);
+    await caseData.save();
+
+    await caseData.populate([
+      { path: 'doctor', select: 'firstName lastName specialization' },
+      { path: 'followUps.author', select: 'firstName lastName userType' }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Follow-up added successfully',
+      data: { case: caseData }
+    });
+  } catch (error) {
+    console.error('Add follow-up error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get case follow-ups
+export const getCaseFollowUps = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const caseData = await Case.findById(id)
+      .select('followUps')
+      .populate('followUps.author', 'firstName lastName userType profilePicture');
+
+    if (!caseData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        followUps: caseData.followUps,
+        total: caseData.followUps.length
+      }
+    });
+  } catch (error) {
+    console.error('Get case follow-ups error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Generate AI case suggestions (placeholder for AI integration)
+export const generateAISuggestions = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const caseData = await Case.findById(id);
+    if (!caseData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    // Simple similarity-based suggestion algorithm
+    // In production, this would use AI/ML algorithms
+    const similarCases = await Case.find({
+      _id: { $ne: id },
+      $or: [
+        { specialization: caseData.specialization },
+        { difficulty: caseData.difficulty },
+        { tags: { $in: caseData.tags } }
+      ],
+      isActive: true
+    })
+    .select('title description specialization difficulty tags')
+    .limit(5)
+    .sort({ createdAt: -1 });
+
+    // Update case with AI suggestions
+    caseData.aiSuggestions = {
+      suggestedCases: similarCases.map(c => c._id) as any,
+      relevanceScore: 0.8, // Placeholder score
+      lastUpdated: new Date()
+    };
+
+    await caseData.save();
+
+    res.json({
+      success: true,
+      message: 'AI suggestions generated successfully',
+      data: {
+        suggestions: similarCases,
+        relevanceScore: caseData.aiSuggestions?.relevanceScore || 0.8
+      }
+    });
+  } catch (error) {
+    console.error('Generate AI suggestions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get AI suggestions for case
+export const getCaseAISuggestions = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const caseData = await Case.findById(id)
+      .populate('aiSuggestions.suggestedCases', 'title description specialization difficulty tags createdAt');
+
+    if (!caseData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        suggestions: caseData.aiSuggestions?.suggestedCases || [],
+        relevanceScore: caseData.aiSuggestions?.relevanceScore || 0,
+        lastUpdated: caseData.aiSuggestions?.lastUpdated
+      }
+    });
+  } catch (error) {
+    console.error('Get case AI suggestions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};

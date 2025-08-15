@@ -34,6 +34,18 @@ export interface ICase extends Document {
   isActive: boolean;
   isPatientCase: boolean; // True if posted by patient
   pointsAwarded: number; // Points given to doctor for posting
+  followUps: {
+    author: mongoose.Types.ObjectId;
+    content: string;
+    outcome?: string;
+    images?: string[];
+    createdAt: Date;
+  }[];
+  aiSuggestions?: {
+    suggestedCases: mongoose.Types.ObjectId[];
+    relevanceScore: number;
+    lastUpdated: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -162,6 +174,47 @@ const CaseSchema = new Schema<ICase>({
     type: Number,
     default: 0,
     min: [0, 'Points awarded cannot be negative']
+  },
+  followUps: [{
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    content: {
+      type: String,
+      required: [true, 'Follow-up content is required'],
+      trim: true,
+      maxlength: [2000, 'Follow-up content cannot exceed 2000 characters']
+    },
+    outcome: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Outcome cannot exceed 1000 characters']
+    },
+    images: [{
+      type: String,
+      trim: true
+    }],
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  aiSuggestions: {
+    suggestedCases: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Case'
+    }],
+    relevanceScore: {
+      type: Number,
+      min: [0, 'Relevance score cannot be negative'],
+      max: [1, 'Relevance score cannot exceed 1']
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
   }
 }, {
   timestamps: true

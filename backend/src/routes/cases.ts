@@ -7,7 +7,11 @@ import {
   deleteCase,
   addComment,
   toggleLike,
-  getMyCases
+  getMyCases,
+  addFollowUp,
+  getCaseFollowUps,
+  generateAISuggestions,
+  getCaseAISuggestions
 } from '../controllers/caseController';
 import { authenticate } from '../middleware/auth';
 
@@ -26,5 +30,13 @@ router.delete('/:id', authenticate, deleteCase);
 // Interactive routes (all authenticated users)
 router.post('/:id/comments', authenticate, addComment);
 router.post('/:id/like', authenticate, toggleLike);
+
+// Follow-up routes
+router.post('/:id/follow-ups', authenticate, addFollowUp);
+router.get('/:id/follow-ups', authenticate, getCaseFollowUps);
+
+// AI suggestion routes
+router.post('/:id/ai-suggestions', authenticate, generateAISuggestions);
+router.get('/:id/ai-suggestions', authenticate, getCaseAISuggestions);
 
 export default router;

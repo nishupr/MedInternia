@@ -1,2 +1,0 @@
-# MedInternia
-Team Blue Spies
