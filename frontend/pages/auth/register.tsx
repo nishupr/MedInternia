@@ -200,7 +200,7 @@ export default function Register() {
                     )}
                     <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                       <Button variant="outlined" color="primary" onClick={handleBack} sx={{ flex: 1, py: 1.3, fontWeight: 700, fontSize: '1.1rem', borderRadius: 3 }}>Back</Button>
-                      <Button type="submit" variant="contained" color="primary" sx={{ flex: 1, py: 1.3, fontWeight: 700, fontSize: '1.1rem', borderRadius: 3, boxShadow: '0 4px 20px 0 rgba(31, 38, 135, 0.10)', transition: 'all 0.2s', '&:hover': { background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)', transform: 'scale(1.03)', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)' } }}>Register</Button>
+                      <Button type="submit" variant="contained" color="primary" sx={{ flex: 1, py: 1.3, fontWeight: 700, fontSize: '1.1rem', borderRadius: 3, boxShadow: '0 4px 20px 0 rgba(31, 38, 135, 0.10)', background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)', transition: 'all 0.2s', '&:hover': { background: 'linear-gradient(90deg, #1565c0 0%, #2193b0 100%)', transform: 'scale(1.03)', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)' } }}>Register</Button>
                     </Stack>
                   </>
                 )}

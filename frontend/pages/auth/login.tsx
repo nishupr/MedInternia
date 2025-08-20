@@ -28,10 +28,20 @@ export default function Login() {
 
   return (
     <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Paper elevation={6} sx={{ p: 4, borderRadius: 4, minWidth: 350, maxWidth: 400 }}>
-        <Typography variant="h4" gutterBottom align="center">Login</Typography>
-        {error && <Alert severity="error">{error}</Alert>}
-        <form onSubmit={handleSubmit}>
+      <Paper elevation={8} sx={{
+        p: 4,
+        borderRadius: 4,
+        minWidth: 350,
+        maxWidth: 400,
+        background: 'rgba(255,255,255,0.98)',
+        boxShadow: '0 8px 32px 0 rgba(33,147,176,0.10)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <Box sx={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, bgcolor: '#e0eafc', borderRadius: '50%', opacity: 0.5, zIndex: 0 }} />
+        <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 900, color: '#1565c0', letterSpacing: 1, zIndex: 1, position: 'relative' }}>Login</Typography>
+        {error && <Alert severity="error" sx={{ zIndex: 1, position: 'relative' }}>{error}</Alert>}
+        <form onSubmit={handleSubmit} style={{ zIndex: 1, position: 'relative' }}>
           <TextField
             label="Email"
             type="email"
@@ -40,6 +50,7 @@ export default function Login() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+            sx={{ bgcolor: '#f8fafd', borderRadius: 2 }}
           />
           <TextField
             label="Password"
@@ -49,16 +60,37 @@ export default function Login() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
+            sx={{ bgcolor: '#f8fafd', borderRadius: 2 }}
           />
-          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth
+            sx={{
+              mt: 2,
+              py: 1.3,
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              borderRadius: 3,
+              boxShadow: '0 4px 20px 0 rgba(31, 38, 135, 0.10)',
+              background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)',
+              transition: 'all 0.2s',
+              '&:hover': {
+                background: 'linear-gradient(90deg, #1565c0 0%, #2193b0 100%)',
+                transform: 'scale(1.03)',
+                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)'
+              }
+            }}
+          >
             Login
           </Button>
         </form>
-        <Divider sx={{ my: 3 }}>or</Divider>
-        <Box textAlign="center">
+        <Divider sx={{ my: 3, zIndex: 1, position: 'relative' }}>or</Divider>
+        <Box textAlign="center" sx={{ zIndex: 1, position: 'relative' }}>
           <Typography variant="body2" sx={{ mb: 1 }}>Don't have an account?</Typography>
           <Link href="/auth/register" passHref>
-            <Button variant="outlined" color="secondary" fullWidth>Register</Button>
+            <Button variant="outlined" color="primary" fullWidth sx={{ borderRadius: 3, fontWeight: 700 }}>Register</Button>
           </Link>
         </Box>
       </Paper>
