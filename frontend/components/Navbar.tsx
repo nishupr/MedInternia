@@ -41,10 +41,15 @@ interface NavButtonProps {
 }
 
 // Reusable component for navigation buttons
-const NavButton: React.FC<NavButtonProps> = ({ href, icon, label, isActive }) => {
+const NavButton: React.FC<NavButtonProps> = ({
+  href,
+  icon,
+  label,
+  isActive,
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  
+
   if (isMobile) {
     return (
       <ListItem disablePadding>
@@ -93,35 +98,9 @@ export default function Navbar({ route }: { route?: string }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Role-based dashboard navigation
+  // Home icon navigation: always go to /landing
   const handleHomeNav = () => {
-    // If logged in, always go to dashboard; else go to main page
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      const role = localStorage.getItem('role') || '';
-      // Only route to dashboard if logged in
-      if (token) {
-        switch (role) {
-          case 'doctor':
-            router.push('/dashboard/doctor');
-            return;
-          case 'patient':
-            router.push('/dashboard/patient');
-            return;
-          case 'intern':
-            router.push('/dashboard/intern');
-            return;
-          case 'admin':
-            router.push('/dashboard/admin');
-            return;
-          default:
-            router.push('/dashboard');
-            return;
-        }
-      }
-    }
-    // If not logged in, always go to main page
-    router.push('/');
+    router.push("/landing");
   };
 
   // More dropdown and mobile drawer state
@@ -142,7 +121,7 @@ export default function Navbar({ route }: { route?: string }) {
   const toggleDrawer = (open: boolean) => () => {
     setDrawerOpen(open);
   };
-  
+
   // Recent searches and suggestions
   const [showSuggestions, setShowSuggestions] = React.useState(false);
   const [recentSearches, setRecentSearches] = React.useState<string[]>([
@@ -191,7 +170,7 @@ export default function Navbar({ route }: { route?: string }) {
           </IconButton>
           <Typography
             variant="h6"
-            sx={{ fontWeight: 700, letterSpacing: 1, mr: 2, cursor: 'pointer' }}
+            sx={{ fontWeight: 700, letterSpacing: 1, mr: 2, cursor: "pointer" }}
             onClick={handleHomeNav}
           >
             Med-Internia
@@ -260,7 +239,11 @@ export default function Navbar({ route }: { route?: string }) {
                       color: "#222",
                     }}
                   />
-                  <IconButton type="submit" sx={{ p: '10px' }} aria-label="search">
+                  <IconButton
+                    type="submit"
+                    sx={{ p: "10px" }}
+                    aria-label="search"
+                  >
                     <SearchIcon />
                   </IconButton>
                 </Paper>
@@ -340,9 +323,7 @@ export default function Navbar({ route }: { route?: string }) {
           </Box>
           {/* Main Nav Buttons for Desktop */}
           {!isMobile && (
-            <Box
-              sx={{ display: "flex", alignItems: "center" }}
-            >
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <NavButton
                 href="/cases"
                 icon={<FolderOpenIcon />}
@@ -383,14 +364,16 @@ export default function Navbar({ route }: { route?: string }) {
                 anchorEl={moreAnchorEl}
                 open={moreOpen}
                 onClose={handleMoreClose}
-                PaperProps={{ sx: { minWidth: 160, borderRadius: 2, textAlign: 'center' } }}
+                PaperProps={{
+                  sx: { minWidth: 160, borderRadius: 2, textAlign: "center" },
+                }}
               >
                 <MenuItem
                   onClick={() => {
                     handleMoreClose();
                     router.push("/resources");
                   }}
-                  sx={{ justifyContent: 'center' }}
+                  sx={{ justifyContent: "center" }}
                 >
                   Resources
                 </MenuItem>
@@ -399,7 +382,7 @@ export default function Navbar({ route }: { route?: string }) {
                     handleMoreClose();
                     router.push("/leaderboard");
                   }}
-                  sx={{ justifyContent: 'center' }}
+                  sx={{ justifyContent: "center" }}
                 >
                   Leaderboard
                 </MenuItem>
@@ -408,7 +391,7 @@ export default function Navbar({ route }: { route?: string }) {
                     handleMoreClose();
                     router.push("/badges");
                   }}
-                  sx={{ justifyContent: 'center' }}
+                  sx={{ justifyContent: "center" }}
                 >
                   Badges
                 </MenuItem>
@@ -453,7 +436,7 @@ export default function Navbar({ route }: { route?: string }) {
             background: "linear-gradient(180deg, #2193b0 0%, #6dd5ed 100%)",
             color: "white",
             width: 250,
-          }
+          },
         }}
       >
         <Box
@@ -462,47 +445,47 @@ export default function Navbar({ route }: { route?: string }) {
           onKeyDown={toggleDrawer(false)}
           sx={{ py: 2 }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>
               Med-Internia
             </Typography>
           </Box>
-          <Divider sx={{ borderColor: 'rgba(255,255,255,0.3)' }} />
+          <Divider sx={{ borderColor: "rgba(255,255,255,0.3)" }} />
           <List>
-            <NavButton 
-              href="/cases" 
-              icon={<FolderOpenIcon />} 
+            <NavButton
+              href="/cases"
+              icon={<FolderOpenIcon />}
               label="Cases"
               isActive={router.pathname === "/cases"}
             />
-            <NavButton 
-              href="/jobs" 
-              icon={<WorkIcon />} 
+            <NavButton
+              href="/jobs"
+              icon={<WorkIcon />}
               label="Jobs"
               isActive={router.pathname === "/jobs"}
             />
-            <NavButton 
-              href="/webinars" 
-              icon={<VideocamIcon />} 
+            <NavButton
+              href="/webinars"
+              icon={<VideocamIcon />}
               label="Webinars"
               isActive={router.pathname === "/webinars"}
             />
-            <NavButton 
-              href="/resources" 
-              icon={<InfoIcon />} 
-              label="Resources" 
+            <NavButton
+              href="/resources"
+              icon={<InfoIcon />}
+              label="Resources"
               isActive={router.pathname === "/resources"}
             />
-            <NavButton 
-              href="/leaderboard" 
-              icon={<InfoIcon />} 
-              label="Leaderboard" 
+            <NavButton
+              href="/leaderboard"
+              icon={<InfoIcon />}
+              label="Leaderboard"
               isActive={router.pathname === "/leaderboard"}
             />
-            <NavButton 
-              href="/badges" 
-              icon={<InfoIcon />} 
-              label="Badges" 
+            <NavButton
+              href="/badges"
+              icon={<InfoIcon />}
+              label="Badges"
               isActive={router.pathname === "/badges"}
             />
           </List>
