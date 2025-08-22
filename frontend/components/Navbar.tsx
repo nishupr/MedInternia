@@ -149,6 +149,32 @@ export default function Navbar({ route }: { route?: string }) {
   }, []);
 
   const showHint = !search && !isFocused;
+  const [profileImageUrl, setProfileImageUrl] = React.useState<string | undefined>(undefined);
+  const [firstName, setFirstName] = React.useState<string>("");
+  const [lastName, setLastName] = React.useState<string>("");
+  const [userType, setUserType] = React.useState<string>("");
+
+React.useEffect(() => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  if (!token || !userId) return;
+
+  import('../utils/api').then(apiModule => {
+    apiModule.default.get(`/users/${userId}/profile`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => {
+      const userData = res.data?.data?.user || res.data?.user || res.data;
+  setProfileImageUrl(userData.profilePicture || undefined);
+  setFirstName(userData.firstName || "");
+  setLastName(userData.lastName || "");
+  setUserType(userData.userType || "");
+    }).catch(() => {
+      setProfileImageUrl(undefined);
+      setFirstName("");
+      setLastName("");
+    });
+  });
+}, []);
   
   return (
     <>
@@ -434,9 +460,15 @@ export default function Navbar({ route }: { route?: string }) {
           )}
 
           {/* Profile Dropdown: always visible, right side */}
-          <Box sx={{ ml: "auto", display: "flex", alignItems: "center" }}>
-            <ProfileDropdown onNavigate={router.push} />
-          </Box>
+            <Box sx={{ ml: "auto", display: "flex", alignItems: "center" }}>
+            <ProfileDropdown
+              onNavigate={router.push}
+              profileImageUrl={profileImageUrl}
+              firstName={firstName}
+              lastName={lastName}
+              userType={userType}
+            />
+            </Box>
         </Toolbar>
       </AppBar>
       {/* Mobile Drawer */}

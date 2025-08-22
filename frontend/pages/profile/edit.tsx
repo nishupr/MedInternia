@@ -243,29 +243,29 @@ export default function EditProfilePage() {
         const data = await res.json();
         if (data.success && data.data && data.data.user) {
           const user = data.data.user;
-          setForm(prevForm => ({
-            ...prevForm,
-            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-            bio: user.bio || "",
-            email: user.email || "",
-            phone: user.phone || "",
-            address: {
-              street: user.address?.street || "",
-              city: user.address?.city || "",
-              state: user.address?.state || "",
-              zip: user.address?.zipCode || "",
-            },
-            image: user.profilePicture || ROLE_AVATARS[user.userType === "doctor" ? "Doctor" : user.userType === "intern" ? "Intern" : "Patient"],
-            role: user.userType === "doctor" ? "Doctor" : user.userType === "intern" ? "Intern" : "Patient",
-            medicalSchool: user.medicalSchool || "",
-            graduationYear: user.yearOfStudy || "",
-            specialtiesOfInterest: user.interests || "",
-            linkedInUrl: user.linkedInProfile || "",
-            medicalLicenseNumber: user.licenseNumber || "",
-            specialtyExpertise: user.specialization || "",
-            hospitalAffiliation: user.hospitalAffiliation || "",
-            yearsOfExperience: user.experience || "",
-          }));
+            setForm(prevForm => ({
+              ...prevForm,
+              name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+              bio: user.bio || "",
+              email: user.email || "",
+              phone: user.phone || "",
+              address: {
+                street: user.address?.street || "",
+                city: user.address?.city || "",
+                state: user.address?.state || "",
+                zip: user.address?.zipCode || user.address?.zip || "",
+              },
+              image: user.profilePicture || ROLE_AVATARS[user.userType === "doctor" ? "Doctor" : user.userType === "intern" ? "Intern" : "Patient"],
+              role: user.userType === "doctor" ? "Doctor" : user.userType === "intern" ? "Intern" : "Patient",
+              medicalSchool: user.medicalSchool || "",
+              graduationYear: user.yearOfStudy || user.graduationYear || "",
+              specialtiesOfInterest: user.interests ? Array.isArray(user.interests) ? user.interests.join(', ') : user.interests : "",
+              linkedInUrl: user.linkedInProfile || user.linkedInUrl || "",
+              medicalLicenseNumber: user.licenseNumber || user.medicalLicenseNumber || "",
+              specialtyExpertise: user.specialization || user.specialtyExpertise || "",
+              hospitalAffiliation: user.hospitalAffiliation || user.hospital || "",
+              yearsOfExperience: user.experience || user.yearsOfExperience || "",
+            }));
         }
       } catch (err) {
         // Optionally handle error

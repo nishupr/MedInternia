@@ -121,6 +121,29 @@ export const register = async (req: Request, res: Response) => {
     // Remove password from response
     const userResponse = user.toObject() as any;
     delete userResponse.password;
+    // If the user is an intern, create notifications for all future webinars
+    if (user.userType === 'intern') {
+      const Webinar = require('../models/Webinar').default;
+      const Notification = require('../models/Notification').default;
+  // Find all webinars (past and future)
+  const webinars = await Webinar.find({});
+      const notifications = [];
+      for (const webinar of webinars) {
+        // Populate host for message
+        await webinar.populate('host', 'firstName lastName');
+        const host = webinar.host as any;
+        notifications.push({
+          recipient: user._id,
+          message: `New webinar scheduled: ${webinar.title} by Dr. ${host.firstName} ${host.lastName}`,
+          type: 'webinar',
+          link: webinar.meetingLink
+        });
+      }
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'User registered successfully',

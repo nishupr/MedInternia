@@ -11,7 +11,7 @@ export const notifyInternsWebinar = async (webinar: any) => {
     recipient: intern._id,
     message: `New webinar scheduled: ${webinar.title} by Dr. ${webinar.host.firstName} ${webinar.host.lastName}`,
     type: 'webinar',
-    link: `/webinars/${webinar._id}`
+    link: webinar.meetingLink
   }));
   await Notification.insertMany(notifications);
 };

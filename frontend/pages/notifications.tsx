@@ -25,45 +25,24 @@ const notificationIcons = {
   reply: <ChatBubbleIcon color="secondary" />,
 };
 
+type NotificationType = keyof typeof notificationIcons;
+type Notification = {
+  _id?: string;
+  id?: string;
+  type: NotificationType;
+  isRead?: boolean;
+  message?: string;
+  link?: string;
+  createdAt?: string;
+  icon?: React.ReactNode;
+  unread?: boolean;
+  timestamp?: string;
+  group?: string;
+  [key: string]: any;
+};
+
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: "mention",
-      icon: <ChatBubbleIcon color="primary" />,
-      message: "You were mentioned in a case discussion.",
-      timestamp: "2h ago",
-      group: "Today",
-      unread: true,
-    },
-    {
-      id: 2,
-      type: "system",
-      icon: <CheckCircleIcon color="success" />,
-      message: "Your profile was verified.",
-      timestamp: "5h ago",
-      group: "Today",
-      unread: false,
-    },
-    {
-      id: 3,
-      type: "update",
-      icon: <NotificationsIcon color="info" />,
-      message: "System update completed.",
-      timestamp: "Yesterday",
-      group: "Yesterday",
-      unread: false,
-    },
-    {
-      id: 4,
-      type: "mention",
-      icon: <ChatBubbleIcon color="primary" />,
-      message: "You were mentioned in a webinar chat.",
-      timestamp: "2 days ago",
-      group: "Earlier",
-      unread: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("All");
   const [allRead, setAllRead] = useState(false);
 
@@ -87,9 +66,9 @@ export default function NotificationsPage() {
             group,
           };
         });
-        setNotifications(prev => [...prev, ...notifList]);
+        setNotifications(notifList);
       })
-      .catch(() => setNotifications(prev => [...prev]));
+      .catch(() => setNotifications([]));
   }, []);
 
   // Filter logic

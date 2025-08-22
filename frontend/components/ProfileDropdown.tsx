@@ -18,11 +18,15 @@ import GroupIcon from "@mui/icons-material/Group";
 import StarIcon from "@mui/icons-material/Star";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
-const ProfileDropdown = ({
-  onNavigate,
-}: {
+interface ProfileDropdownProps {
   onNavigate: (path: string) => void;
-}) => {
+  profileImageUrl?: string;
+  firstName?: string;
+  lastName?: string;
+  userType?: string;
+}
+
+const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate, profileImageUrl, firstName, lastName, userType }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -33,22 +37,9 @@ const ProfileDropdown = ({
     setAnchorEl(null);
   };
 
-  // Get userId from localStorage
+  // Get userId and initials from localStorage
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : '';
 
-  // Fetch user profile data from backend using axios
-  const [profile, setProfile] = useState<any>(null);
-  React.useEffect(() => {
-    if (!userId) return;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-    import('../utils/api').then(({ default: api }) => {
-      api.get(`/users/${userId}/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => setProfile(res.data?.user || null))
-        .catch(() => setProfile(null));
-    });
-  }, [userId]);
   // Logout logic
   const logout = () => {
   // Clear tokens/session (example: localStorage)
@@ -68,14 +59,14 @@ const ProfileDropdown = ({
         aria-label="Profile"
         sx={{ ml: 2 }}
       >
-        {/* Show avatar if available, else initial */}
-        {profile && profile.profilePicture ? (
-          <Avatar src={profile.profilePicture} sx={{ width: 40, height: 40, mr: 1 }} />
+        {/* Show avatar from prop if available, else initials from props */}
+        {profileImageUrl ? (
+          <Avatar src={profileImageUrl} sx={{ width: 40, height: 40, mr: 1 }} />
         ) : (
           <Box
             sx={{
-              bgcolor: '#bdbdbd',
-              color: '#fff',
+              bgcolor: '#bae6fd',
+              color: '#0284c7',
               width: 40,
               height: 40,
               borderRadius: '50%',
@@ -83,11 +74,15 @@ const ProfileDropdown = ({
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 700,
-              fontSize: 22,
+              fontSize: 16,
               mr: 1,
             }}
           >
-            {profile && profile.firstName ? profile.firstName[0].toUpperCase() : 'U'}
+            {(firstName && lastName)
+              ? (userType === 'doctor'
+                  ? `${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}`
+                  : `${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}`)
+              : 'U'}
           </Box>
         )}
         <ArrowDropDownIcon />

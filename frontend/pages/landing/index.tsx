@@ -121,7 +121,11 @@ const ProfileSidebar = () => {
             color: "#0284c7",
           }}
         >
-          {user ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}` : 'DR'}
+          {user
+            ? user.userType === 'doctor'
+              ? `${user.firstName?.toUpperCase()[0] ?? ''}${user.lastName?.toUpperCase()[0] ?? ''}`
+              : `${user.firstName?.toUpperCase()[0] ?? ''}${user.lastName?.toUpperCase()[0] ?? ''}`
+            : ''}
         </div>
       </div>
       <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -133,7 +137,11 @@ const ProfileSidebar = () => {
             margin: "0 0 8px 0",
           }}
         >
-            {user ? `Dr. ${user.firstName} ${user.lastName}` : 'Loading...'}
+            {user
+              ? user.userType === 'doctor'
+                ? `Dr. ${user.firstName} ${user.lastName}`
+                : `${(user.firstName ?? '').toUpperCase()} ${(user.lastName ?? '').toUpperCase()}`
+              : 'Loading...'}
         </h2>
         <p style={{ fontSize: 14, color: "#64748b", margin: 0, lineHeight: 1.5 }}>
           {user ? user.specialization : ''}
@@ -226,48 +234,72 @@ const ProfileSidebar = () => {
         ))}
       </div>
     </div>
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {[
-        {
-        icon: <Heart size={16} color="#64748b" />,
-        label: "Specialization:",
-        value: user?.specialization || "N/A",
-        },
-        {
-        icon: <MapPin size={16} color="#64748b" />,
-        label: "Hospital:",
-        value: user?.hospital || "N/A",
-        },
-        {
-        icon: <GraduationCap size={16} color="#64748b" />,
-        label: "Education:",
-        value: user?.education || "N/A",
-        },
-        {
-        icon: <MapPin size={16} color="#64748b" />,
-        label: "Location:",
-        value: user?.location || "N/A",
-        },
-        {
-        icon: <Clock size={16} color="#64748b" />,
-        label: "Experience:",
-        value: user?.experience || "N/A",
-        },
-      ].map((item, idx) => (
-        <div
-        key={idx}
-        style={{ display: "flex", alignItems: "center", gap: 8 }}
-        >
-        {item.icon}
-        <span style={{ fontSize: 14, color: "#64748b" }}>{item.label}</span>
-        <span style={{ fontSize: 14, color: "#1e293b", fontWeight: 500 }}>
-          {item.value}
-        </span>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {user?.userType === 'doctor' && (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Heart size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Specialization:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.specialization || "N/A"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <GraduationCap size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Qualifications:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.qualifications?.join(', ') || "N/A"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Clock size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Experience:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.experience ? `${user.experience} yrs` : "N/A"}</span>
+              </div>
+            </>
+          )}
+          {user?.userType === 'intern' && (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <GraduationCap size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Medical School:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.medicalSchool || "N/A"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Clock size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Year of Study:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.yearOfStudy || "N/A"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Heart size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Interests:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.interests?.join(', ') || "N/A"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Award size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Mentor Doctor:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.mentorDoctor || "N/A"}</span>
+              </div>
+            </>
+          )}
+          {user?.userType === 'patient' && (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <MapPin size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Location:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.address?.city || "N/A"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Heart size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Medical History:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.medicalHistory?.join(', ') || "N/A"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Award size={16} color="#64748b" />
+                <span style={{ fontWeight: 500, color: "#64748b", minWidth: 110 }}>Allergies:</span>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>{user.allergies?.join(', ') || "N/A"}</span>
+              </div>
+            </>
+          )}
         </div>
-      ))}
       </div>
-    </div>
     <div
       style={{
         display: "flex",
@@ -1052,8 +1084,20 @@ type Doctor = {
   education?: string;
   location?: string;
   experience?: string;
+  qualifications?: string[];
   followersCount?: number;
   followingCount?: number;
+  userType?: string;
+  medicalSchool?: string;
+  yearOfStudy?: number;
+  interests?: string[];
+  address?: {
+    city?: string;
+    [key: string]: any;
+  };
+  medicalHistory?: string[];
+  allergies?: string[];
+  mentorDoctor?: string;
 };
 
 const RecommendedConnections = () => {

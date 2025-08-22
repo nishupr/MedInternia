@@ -51,12 +51,12 @@ export const createWebinar = async (req: AuthRequest, res: Response) => {
 
     // Notify all interns about the new webinar
     const interns = await User.find({ userType: 'intern' });
-    const notifications = interns.map(intern => ({
-      recipient: intern._id,
-      message: `New webinar scheduled: ${webinar.title} by Dr. ${host.firstName} ${host.lastName}`,
-      type: 'webinar',
-      link: `/webinars/${webinar._id}`
-    }));
+      const notifications = interns.map(intern => ({
+        recipient: intern._id,
+        message: `New webinar scheduled: ${webinar.title} by Dr. ${host.firstName} ${host.lastName}`,
+        type: 'webinar',
+        link: webinar.meetingLink
+      }));
     await Notification.insertMany(notifications);
 
     res.status(201).json({
