@@ -18,6 +18,7 @@ import {
   Modal,
   Button,
   Chip,
+  IconButton, // <-- Import IconButton
 } from "@mui/material";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import GroupIcon from "@mui/icons-material/Group";
@@ -25,6 +26,8 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import StarIcon from "@mui/icons-material/Star";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import LockIcon from "@mui/icons-material/Lock";
+import BrainIcon from "@mui/icons-material/Psychology";
+import CloseIcon from "@mui/icons-material/Close"; // <-- Import CloseIcon
 import { StaticImageData } from "next/image";
 
 // Define the Achievement type and data
@@ -44,7 +47,7 @@ const achievements: Achievement[] = [
   {
     id: 1,
     name: "Champion",
-    icon: <EmojiEventsIcon sx={{ color: "gold" }} />,
+    icon: <EmojiEventsIcon sx={{ color: "gold", fontSize: 80 }} />,
     progress: 80,
     unlocked: true,
     date: "2025-07-10",
@@ -54,7 +57,7 @@ const achievements: Achievement[] = [
   {
     id: 2,
     name: "Expert Reviewer",
-    icon: <StarIcon sx={{ color: "#2193b0" }} />,
+    icon: <StarIcon sx={{ color: "#2193b0", fontSize: 80 }} />,
     progress: 60,
     unlocked: true,
     date: "2025-06-20",
@@ -64,7 +67,7 @@ const achievements: Achievement[] = [
   {
     id: 3,
     name: "Growth Master",
-    icon: <TrendingUpIcon sx={{ color: "#6dd5ed" }} />,
+    icon: <TrendingUpIcon sx={{ color: "#6dd5ed", fontSize: 80 }} />,
     progress: 30,
     unlocked: false,
     date: null,
@@ -74,7 +77,7 @@ const achievements: Achievement[] = [
   {
     id: 4,
     name: "Knowledge Master",
-    icon: <CelebrationIcon sx={{ color: "#ff9800" }} />,
+    icon: <BrainIcon sx={{ color: "#ff9800", fontSize: 80 }} />,
     progress: 100,
     unlocked: true,
     date: "2025-08-01",
@@ -85,7 +88,7 @@ const achievements: Achievement[] = [
   {
     id: 5,
     name: "Community Helper",
-    icon: <GroupIcon sx={{ color: "#43a047" }} />,
+    icon: <GroupIcon sx={{ color: "#43a047", fontSize: 80 }} />,
     progress: 50,
     unlocked: false,
     date: null,
@@ -170,13 +173,49 @@ const badges: Badge[] = [
   },
 ];
 
+// New SparkleEffect component
+const SparkleEffect = () => {
+  return (
+    <>
+      <Box
+        className="sparkle"
+        sx={{ top: "20%", left: "15%", animationDelay: "0.2s" }}
+      />
+      <Box
+        className="sparkle"
+        sx={{ top: "10%", left: "50%", animationDelay: "0.5s" }}
+      />
+      <Box
+        className="sparkle"
+        sx={{ top: "30%", right: "10%", animationDelay: "0.8s" }}
+      />
+      <Box
+        className="sparkle"
+        sx={{ bottom: "25%", left: "20%", animationDelay: "1.1s" }}
+      />
+      <Box
+        className="sparkle"
+        sx={{ bottom: "15%", right: "5%", animationDelay: "1.4s" }}
+      />
+    </>
+  );
+};
+
 export default function AchievementsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<Achievement | null>(null);
+  const [isSparkling, setIsSparkling] = useState(false); // New state for the sparkling effect
 
   const handleOpen = (ach: Achievement) => {
     setSelected(ach);
     setModalOpen(true);
+    // Trigger sparkling effect if the achievement is unlocked
+    if (ach.unlocked) {
+      setIsSparkling(true);
+      setTimeout(() => {
+        setIsSparkling(false);
+      }, 1500); // Effect duration in milliseconds
+    }
   };
 
   const handleClose = () => {
@@ -202,13 +241,34 @@ export default function AchievementsPage() {
   };
 
   return (
-    <Box px={2} py={6} sx={{ fontFamily: 'Poppins, sans-serif', background: '#ecf0f3', minHeight: '100vh' }}>
-      <Typography variant="h4" fontWeight={700} mb={6} textAlign="center" color="#333" sx={{ textShadow: '1px 1px 2px rgba(0,0,0,0.1)' }}>
+    <Box
+      px={2}
+      py={6}
+      sx={{
+        fontFamily: "Poppins, sans-serif",
+        background: "#ecf0f3",
+        minHeight: "100vh",
+      }}
+    >
+      <Typography
+        variant="h4"
+        fontWeight={700}
+        mb={6}
+        textAlign="center"
+        color="#333"
+        sx={{ textShadow: "1px 1px 2px rgba(0,0,0,0.1)" }}
+      >
         Achievements
       </Typography>
 
       {/* Unlocked Achievements Section */}
-      <Typography variant="h5" fontWeight={600} mb={3} color="#555" sx={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.1)' }}>
+      <Typography
+        variant="h5"
+        fontWeight={600}
+        mb={3}
+        color="#555"
+        sx={{ textShadow: "0.5px 0.5px 1px rgba(0,0,0,0.1)" }}
+      >
         Unlocked Triumphs
       </Typography>
       <Box
@@ -227,12 +287,16 @@ export default function AchievementsPage() {
             sx={{
               cursor: "pointer",
               borderRadius: 4,
-              boxShadow: "10px 10px 20px #caced1, -10px -10px 20px #ffffff",
+              boxShadow:
+                "10px 10px 20px #caced1, -10px -10px 20px #ffffff",
               background: "#ecf0f3",
               position: "relative",
               minHeight: 180,
-              transition: "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-              animation: `card-fade-in 0.5s ease-out forwards ${index * 0.1}s`,
+              transition:
+                "transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              animation: `card-fade-in 0.5s ease-out forwards ${
+                index * 0.1
+              }s`,
               "&:hover": {
                 transform: "translateY(-8px) scale(1.03)",
                 boxShadow: "6px 6px 12px #caced1, -6px -6px 12px #ffffff",
@@ -251,9 +315,9 @@ export default function AchievementsPage() {
                   fontWeight: 700,
                   fontSize: 12,
                   animation: "pulse 1.5s infinite",
-                  background: 'linear-gradient(45deg, #ffc107, #ff9800)',
-                  color: '#fff',
-                  boxShadow: '0 2px 8px rgba(255,193,7,0.4)',
+                  background: "linear-gradient(45deg, #ffc107, #ff9800)",
+                  color: "#fff",
+                  boxShadow: "0 2px 8px rgba(255,193,7,0.4)",
                 }}
               />
             )}
@@ -266,7 +330,13 @@ export default function AchievementsPage() {
                 pt: 4,
               }}
             >
-              <Box mb={2} sx={{ fontSize: 60, transition: 'transform 0.3s', '&:hover': { transform: 'rotate(10deg)' } }}>
+              <Box
+                mb={2}
+                sx={{
+                  fontSize: 80,
+                  transition: "transform 0.3s",
+                }}
+              >
                 {ach.icon}
               </Box>
               <Typography variant="h6" fontWeight={700} mb={1} color="#444">
@@ -279,8 +349,9 @@ export default function AchievementsPage() {
                   height: 10,
                   borderRadius: 5,
                   mb: 1,
-                  background: '#dde1e6',
-                  boxShadow: 'inset 2px 2px 4px #caced1, inset -2px -2px 4px #ffffff',
+                  background: "#dde1e6",
+                  boxShadow:
+                    "inset 2px 2px 4px #caced1, inset -2px -2px 4px #ffffff",
                   "& .MuiLinearProgress-bar": {
                     transition: "transform 1s cubic-bezier(.4, 2, .3, 1)",
                     backgroundColor: getProgressColor(ach.progress),
@@ -294,9 +365,16 @@ export default function AchievementsPage() {
           </Card>
         ))}
       </Box>
-      
+
       {/* Locked Achievements Section */}
-      <Typography variant="h5" fontWeight={600} mt={6} mb={3} color="#555" sx={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.1)' }}>
+      <Typography
+        variant="h5"
+        fontWeight={600}
+        mt={6}
+        mb={3}
+        color="#555"
+        sx={{ textShadow: "0.5px 0.5px 1px rgba(0,0,0,0.1)" }}
+      >
         Locked Challenges
       </Typography>
       <Box
@@ -313,13 +391,16 @@ export default function AchievementsPage() {
               sx={{
                 cursor: "not-allowed",
                 borderRadius: 4,
-                boxShadow: "inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff",
+                boxShadow:
+                  "inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff",
                 opacity: 0.6,
                 background: "#ecf0f3",
                 position: "relative",
                 minHeight: 180,
                 transition: "transform 0.3s, opacity 0.3s",
-                animation: `card-fade-in 0.5s ease-out forwards ${index * 0.1}s`,
+                animation: `card-fade-in 0.5s ease-out forwards ${
+                  index * 0.1
+                }s`,
                 "&:hover": {
                   opacity: 0.8,
                 },
@@ -334,15 +415,16 @@ export default function AchievementsPage() {
                   pt: 4,
                 }}
               >
-                <Box mb={2} sx={{ fontSize: 60, color: '#b0b3b9' }}>
+                {/* Enlarged icons and lock icon */}
+                <Box mb={2} sx={{ fontSize: 80, color: "#b0b3b9" }}>
                   {ach.icon}
                   <LockIcon
-                    sx={{ 
+                    sx={{
                       color: "#555",
                       ml: 1,
-                      fontSize: "1.2rem",
+                      fontSize: "1.5rem", // Increased lock icon size
                       verticalAlign: "top",
-                      filter: 'drop-shadow(0 0 5px #fff) drop-shadow(0 0 2px #777)'
+                      filter: "drop-shadow(0 0 5px #fff) drop-shadow(0 0 2px #777)",
                     }}
                   />
                 </Box>
@@ -356,10 +438,11 @@ export default function AchievementsPage() {
                     height: 10,
                     borderRadius: 5,
                     mb: 1,
-                    background: '#dde1e6',
-                    boxShadow: 'inset 2px 2px 4px #caced1, inset -2px -2px 4px #ffffff',
+                    background: "#dde1e6",
+                    boxShadow:
+                      "inset 2px 2px 4px #caced1, inset -2px -2px 4px #ffffff",
                     "& .MuiLinearProgress-bar": {
-                      backgroundColor: '#bdbdbd',
+                      backgroundColor: "#bdbdbd",
                     },
                   }}
                 />
@@ -373,7 +456,14 @@ export default function AchievementsPage() {
       </Box>
 
       {/* --- New Badges Section --- */}
-      <Typography variant="h5" fontWeight={600} mb={3} mt={8} color="#555" sx={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.1)' }}>
+      <Typography
+        variant="h5"
+        fontWeight={600}
+        mb={3}
+        mt={8}
+        color="#555"
+        sx={{ textShadow: "0.5px 0.5px 1px rgba(0,0,0,0.1)" }}
+      >
         Badges
       </Typography>
 
@@ -398,10 +488,13 @@ export default function AchievementsPage() {
                   height: "100%",
                   borderRadius: "50%",
                   overflow: "hidden",
-                  boxShadow: "8px 8px 16px #caced1, -8px -8px 16px #ffffff",
+                  boxShadow:
+                    "8px 8px 16px #caced1, -8px -8px 16px #ffffff",
                   cursor: "pointer",
                   transition: "transform 0.3s, box-shadow 0.3s, filter 0.3s",
-                  animation: `badge-pop-in 0.4s ease-out forwards ${index * 0.15}s`,
+                  animation: `badge-pop-in 0.4s ease-out forwards ${
+                    index * 0.15
+                  }s`,
                   "&:hover": {
                     transform: "scale(1.15) rotate(5deg)",
                     boxShadow: "6px 6px 12px #caced1, -6px -6px 12px #ffffff",
@@ -433,9 +526,9 @@ export default function AchievementsPage() {
                     fontSize: 12,
                     animation: "pulse 1.5s infinite",
                     zIndex: 2,
-                    background: 'linear-gradient(45deg, #ffc107, #ff9800)',
-                    color: '#fff',
-                    boxShadow: '0 2px 8px rgba(255,193,7,0.4)',
+                    background: "linear-gradient(45deg, #ffc107, #ff9800)",
+                    color: "#fff",
+                    boxShadow: "0 2px 8px rgba(255,193,7,0.4)",
                   }}
                 />
               )}
@@ -459,10 +552,13 @@ export default function AchievementsPage() {
                 height: 120,
                 borderRadius: "50%",
                 overflow: "hidden",
-                boxShadow: "inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff",
+                boxShadow:
+                  "inset 6px 6px 12px #caced1, inset -6px -6px 12px #ffffff",
                 cursor: "not-allowed",
                 transition: "transform 0.3s, box-shadow 0.3s",
-                animation: `card-fade-in 0.5s ease-out forwards ${index * 0.1}s`,
+                animation: `card-fade-in 0.5s ease-out forwards ${
+                  index * 0.1
+                }s`,
                 "&:hover": {
                   transform: "scale(1.05)",
                 },
@@ -511,7 +607,7 @@ export default function AchievementsPage() {
                   color: "#555",
                   fontSize: 50,
                   zIndex: 2,
-                  filter: 'drop-shadow(0 0 5px #fff) drop-shadow(0 0 2px #777)',
+                  filter: "drop-shadow(0 0 5px #fff) drop-shadow(0 0 2px #777)",
                 }}
               />
             </Box>
@@ -522,21 +618,39 @@ export default function AchievementsPage() {
       {/* Modal for achievement details */}
       <Modal open={modalOpen} onClose={handleClose}>
         <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            bgcolor: "#ecf0f3",
-            boxShadow: "10px 10px 20px #caced1, -10px -10px 20px #ffffff",
-            p: 5,
-            borderRadius: 6,
-            minWidth: 320,
-            maxWidth: 400,
-            textAlign: "center",
-            animation: "modal-fade-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-          }}
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          bgcolor: "#ecf0f3",
+          boxShadow:
+          "10px 10px 20px #caced1, -10px -10px 20px #ffffff",
+          p: 5,
+          borderRadius: 6,
+          minWidth: 320,
+          maxWidth: 400,
+          textAlign: "center",
+          animation: "modal-fade-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+        }}
         >
+          <IconButton
+            onClick={handleClose}
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              color: "#777",
+              transition: "transform 0.2s ease-in-out",
+              "&:hover": {
+                transform: "rotate(90deg)",
+                color: "#333",
+              },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          {isSparkling && <SparkleEffect />} {/* Conditionally render the sparkle effect */}
           {selected?.unlocked && (
             <CelebrationIcon
               sx={{
@@ -552,7 +666,13 @@ export default function AchievementsPage() {
           {selected && (
             <>
               <Box mb={2} textAlign="center">
-                <Box sx={{ fontSize: 60, mb: 1, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))" }}>
+                <Box
+                  sx={{
+                    fontSize: 60,
+                    mb: 1,
+                    filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))",
+                  }}
+                >
                   {selected.icon}
                 </Box>
                 <Typography variant="h4" fontWeight={800} mt={1} color="#333">
@@ -574,8 +694,9 @@ export default function AchievementsPage() {
                   height: 10,
                   borderRadius: 5,
                   mb: 2,
-                  background: '#dde1e6',
-                  boxShadow: 'inset 2px 2px 4px #caced1, inset -2px -2px 4px #ffffff',
+                  background: "#dde1e6",
+                  boxShadow:
+                    "inset 2px 2px 4px #caced1, inset -2px -2px 4px #ffffff",
                   "& .MuiLinearProgress-bar": {
                     backgroundColor: getProgressColor(selected.progress),
                   },
@@ -592,10 +713,12 @@ export default function AchievementsPage() {
                   sx={{
                     mt: 2,
                     borderRadius: 2,
-                    boxShadow: "6px 6px 12px #caced1, -6px -6px 12px #ffffff",
-                    background: 'linear-gradient(145deg, #3498db, #2980b9)',
-                    color: '#fff',
-                    transition: 'transform 0.3s',
+                    boxShadow:
+                      "6px 6px 12px #caced1, -6px -6px 12px #ffffff",
+                    background:
+                      "linear-gradient(145deg, #3498db, #2980b9)",
+                    color: "#fff",
+                    transition: "transform 0.3s",
                     "&:hover": {
                       transform: "scale(1.05)",
                       boxShadow: "4px 4px 8px #caced1, -4px -4px 8px #ffffff",
@@ -633,7 +756,7 @@ export default function AchievementsPage() {
 
         @keyframes badge-pop-in {
           from {
-            transform: scale(0.5) rotate(-30deg);
+            // transform: scale(0.5) rotate(-30deg);
             opacity: 0;
           }
           70% {
@@ -680,6 +803,36 @@ export default function AchievementsPage() {
           }
           100% {
             transform: scale(1);
+          }
+        }
+
+        .sparkle {
+          position: absolute;
+          width: 5px;
+          height: 5px;
+          background-color: #ffd700;
+          border-radius: 50%;
+          filter: blur(2px);
+          animation: sparkle-glow 1.5s linear infinite;
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        @keyframes sparkle-glow {
+          0% {
+            transform: scale(0);
+            opacity: 0;
+            box-shadow: 0 0 5px #ffd700;
+          }
+          50% {
+            transform: scale(1.5);
+            opacity: 1;
+            box-shadow: 0 0 15px #ffd700;
+          }
+          100% {
+            transform: scale(0);
+            opacity: 0;
+            box-shadow: 0 0 5px #ffd700;
           }
         }
       `}</style>
