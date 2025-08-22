@@ -258,6 +258,7 @@ export default function CreateCase() {
             type="submit"
             variant="contained"
             fullWidth
+            
             sx={{
               mt: 2,
               py: 1.3,

@@ -1121,6 +1121,7 @@ const RecommendedConnections = () => {
   const [following, setFollowing] = React.useState<string[]>([]);
   const [doctors, setDoctors] = React.useState<Doctor[]>([]);
   React.useEffect(() => {
+    
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     import('../../utils/api').then(apiModule => {
       apiModule.default.get('/users/leaderboard?userType=doctor&limit=10')
@@ -1335,35 +1336,23 @@ const Landing = () => {
       setPostFormHeight(postFormRef.current.offsetHeight);
     }
   }, []);
+  React.useEffect(() => {
+    document.body.style.overflowX = 'hidden';
+    return () => { document.body.style.overflowX = ''; };
+  }, []);
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f8fafc",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      }}
-    >
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: 20 }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: 20 }}>
         <div className="landing-grid">
           <div className="landing-left">
             <ProfileSidebar />
           </div>
-          <div
-            className="landing-main"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 0,
-              width: "100%",
-              minWidth: 0,
-            }}
-          >
+          <div className="landing-main" style={{ display: 'flex', flexDirection: 'column', gap: 0, width: '100%', minWidth: 0 }}>
             <div ref={postFormRef}>
               <PostForm />
             </div>
-            <div style={{ width: "100%", minWidth: 0 }}>
+            <div style={{ width: '100%', minWidth: 0 }}>
               <CaseStudyList />
               <RecentUpdatesSection />
               <RecommendedConnections />
