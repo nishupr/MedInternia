@@ -17,6 +17,8 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
+import BookIcon from '@mui/icons-material/Book';
+import DatasetIcon from '@mui/icons-material/Dataset';
 import Image from 'next/image';
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -427,6 +429,18 @@ React.useEffect(() => {
                 icon={<FolderOpenIcon />}
                 label="Cases"
                 isActive={router.pathname === "/cases"}
+              />
+              <NavButton
+                href="/diaries"
+                icon={<BookIcon />}
+                label="Diaries"
+                isActive={router.pathname === "/diaries"}
+              />
+              <NavButton
+                href="/upload-raw"
+                icon={<DatasetIcon />}
+                label="Upload Raw"
+                isActive={router.pathname === "/upload-raw"}
               />
               <NavButton
                 href="/jobs"
