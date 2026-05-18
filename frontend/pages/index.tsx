@@ -1,17 +1,14 @@
 // removed unused qrcode.react import (caused TypeScript default-export error)
 import {
-  Container,
-  Typography,
+  Alert,
   Box,
   Button,
   Paper,
-  Divider,
-  Stack,
   Snackbar,
-  Alert,
+  Stack,
+  Typography
 } from "@mui/material";
 // import Link from 'next/link';
-import Link from "next/link";
 
 import React, { useState } from "react";
 
@@ -119,6 +116,32 @@ const HomePage = () => {
           href="/auth/login"
         >
           Get Started
+        </Button>
+        <Button
+          variant="outlined"
+          href="/contact"
+          sx={{
+            borderRadius: 30,
+            px: 4,
+            py: 1.5,
+            fontWeight: 700,
+            fontSize: "1rem",
+            position: 'absolute',
+            right: { xs: 230, md: 300 },
+            top: { xs: 32, md: 64 },
+            whiteSpace: 'nowrap',
+            border: '2px solid #2193b0',
+            color: '#2193b0',
+            background: '#ffffffcc',
+            transition: "transform 0.2s",
+            '&:hover': {
+              transform: 'scale(1.05)',
+              background: '#e0f7fa',
+              border: '2px solid #2193b0',
+            },
+          }}
+        >
+          Contact Us
         </Button>
       </Box>
       {/* Local video player below Hero section */}
