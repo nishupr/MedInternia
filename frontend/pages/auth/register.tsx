@@ -43,6 +43,9 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   // GSSoC: Loading state for submit button
   const [loading, setLoading] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
@@ -169,7 +172,12 @@ export default function Register() {
       setError('Please fill all required fields.');
       return;
     }
-    setStep(2);
+    if (confirmPassword !== form.password) {
+  setConfirmPasswordError('Passwords do not match');
+  return;
+}
+setConfirmPasswordError('');
+setStep(2);
   };
 
   const handleBack = () => {
@@ -349,6 +357,43 @@ export default function Register() {
                         ),
                       }}
                     />
+                    <TextField
+  label="Confirm Password"
+  type={showConfirmPassword ? 'text' : 'password'}
+  fullWidth
+  margin="normal"
+  value={confirmPassword}
+  onChange={(e) => {
+    setConfirmPassword(e.target.value);
+    if (e.target.value !== form.password) {
+      setConfirmPasswordError('Passwords do not match');
+    } else {
+      setConfirmPasswordError('');
+    }
+  }}
+  required
+                      error={Boolean((confirmPassword && confirmPassword !== form.password) || (!confirmPassword && confirmPasswordError))}
+                      helperText={
+                        confirmPassword && confirmPassword !== form.password
+                          ? 'Passwords do not match'
+                          : !confirmPassword
+                            ? confirmPasswordError
+                            : ''
+                      }
+  InputProps={{
+    endAdornment: (
+      <InputAdornment position="end">
+        <IconButton
+          onClick={() => setShowConfirmPassword((show) => !show)}
+          edge="end"
+          sx={{ color: 'text.secondary' }}
+        >
+          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+        </IconButton>
+      </InputAdornment>
+    ),
+  }}
+/>
                     <TextField select label="User Type" name="userType" fullWidth margin="normal" value={form.userType} onChange={handleChange} required>
                       <MenuItem value="patient">Patient</MenuItem>
                       <MenuItem value="doctor">Doctor</MenuItem>
