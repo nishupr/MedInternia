@@ -133,6 +133,10 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.use('/api', apiRoutes);
 
+// Global Error Handler (must be last)
+import { errorHandler } from './middleware/errorHandler';
+app.use(errorHandler);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Doctor-Intern Collaboration Platform running on port ${PORT}`);
