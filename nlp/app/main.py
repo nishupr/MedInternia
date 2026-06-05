@@ -201,7 +201,7 @@ def _canonical_label(raw: str) -> str | None:
         return "DISEASE"
     if upper in SYMPTOM_TAGS or "SYMPTOM" in upper or "SIGN" in upper:
         return "SYMPTOM"
-    if upper in MEDICATION_TAGS or "CHEMICAL" in upper or "DRUG" in upper or "MED" in upper:
+    if upper in MEDICATION_TAGS or "CHEMICAL" in upper or "DRUG" in upper:
         return "MEDICATION"
     return None  # skip labels we don't care about
 
