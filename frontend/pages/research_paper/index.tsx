@@ -13,7 +13,8 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import { useRouter } from 'next/router';
-import api from '../../utils/api'; // Make sure this path matches your project structure
+import api from '../../utils/api';
+import { getCurrentUserRole } from '../../utils/permissions';
 
 export default function ResearchPaperUpload() {
   const [form, setForm] = useState({
@@ -29,10 +30,16 @@ export default function ResearchPaperUpload() {
   const [loading, setLoading] = useState(false);
   const [openPaper, setOpenPaper] = useState<any>(null);
   const [openDiscussionId, setOpenDiscussionId] = useState<string | null>(null);
+  const [userType, setUserType] = useState('');
   const router = useRouter();
+
+  const isPatient = userType === 'patient';
 
   // Fetch research papers on mount
   useEffect(() => {
+    const storedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null;
+    const currentUserType = storedUser?.userType || getCurrentUserRole() || '';
+    setUserType(String(currentUserType).toLowerCase());
     fetchPapers();
   }, []);
 
@@ -94,6 +101,7 @@ export default function ResearchPaperUpload() {
           Discover, review, and contribute to medical research papers. Share your findings and expand the knowledge base.
         </Typography>
         <Button
+          disabled={isPatient}
           variant="contained"
           sx={{
             borderRadius: 3,
@@ -190,7 +198,12 @@ export default function ResearchPaperUpload() {
           </Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-          <form onSubmit={handleSubmit} style={{ zIndex: 1, position: 'relative' }}>
+          {isPatient ? (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Patients cannot upload research papers. Please use the research library to view available papers.
+            </Alert>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ zIndex: 1, position: 'relative' }}>
             <TextField
               label="Title"
               name="title"
@@ -252,28 +265,29 @@ export default function ResearchPaperUpload() {
                 Selected file: {file.name}
               </Box>
             )}
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              sx={{
-                mt: 2,
-                py: 1.3,
-                fontWeight: 700,
-                fontSize: '1.1rem',
-                borderRadius: 3,
-                boxShadow: '0 4px 20px 0 rgba(31, 38, 135, 0.10)',
-                background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)',
-                textTransform: 'none',
-                letterSpacing: 1,
-                '&:hover': {
-                  background: 'linear-gradient(90deg, #6dd5ed 0%, #2193b0 100%)',
-                },
-              }}
-            >
-              📤 SUBMIT PAPER
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                sx={{
+                  mt: 2,
+                  py: 1.3,
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  borderRadius: 3,
+                  boxShadow: '0 4px 20px 0 rgba(31, 38, 135, 0.10)',
+                  background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)',
+                  textTransform: 'none',
+                  letterSpacing: 1,
+                  '&:hover': {
+                    background: 'linear-gradient(90deg, #6dd5ed 0%, #2193b0 100%)',
+                  },
+                }}
+              >
+                📤 SUBMIT PAPER
+              </Button>
+            </form>
+          )}
   </Box>
       </Box>
     </Box>

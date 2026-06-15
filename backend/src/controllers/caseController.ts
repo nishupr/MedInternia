@@ -1,10 +1,167 @@
+import { createAndEmitNotification } from './notificationController';
 import { Response } from 'express';
 import Case, { ICase } from '../models/Case';
 import User from '../models/User';
+import AICasePostSchedule from '../models/AICasePostSchedule';
 import { AuthRequest } from '../middleware/auth';
+import { buildAICaseSchedule, getNextAICasePostDate } from '../services/aiCasePostingService';
 
 const canModerateComments = (userType?: string) => ['admin', 'doctor', 'moderator'].includes(userType ?? '');
 const canAddCaseFollowUp = (userType?: string) => ['admin', 'doctor', 'intern', 'hospital_staff'].includes(userType ?? '');
+const canModerateCases = (userType?: string) => ['admin', 'doctor', 'moderator'].includes(userType ?? '');
+const publicCaseFilter = {
+  $or: [
+    { moderationStatus: 'approved' },
+    { moderationStatus: { $exists: false } }
+  ]
+};
+
+export const scheduleAICasePost = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user as { _id: string; userType?: string } | undefined;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
+    const schedulePayload = buildAICaseSchedule(req.body);
+    const schedule = await AICasePostSchedule.create({
+      author: user._id,
+      generatedCase: schedulePayload.generatedCase,
+      interval: schedulePayload.interval,
+      scheduledFor: schedulePayload.scheduledFor,
+      nextRunAt: schedulePayload.scheduledFor,
+      reviewStatus: 'pending'
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'AI case draft scheduled for clinical review',
+      data: { schedule }
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to schedule AI case draft';
+    return res.status(400).json({ success: false, message });
+  }
+};
+
+export const getMyAICaseSchedules = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user as { _id: string } | undefined;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
+    const schedules = await AICasePostSchedule.find({ author: user._id, isActive: true })
+      .populate('publishedCase', 'title createdAt')
+      .sort({ nextRunAt: 1 });
+
+    return res.json({
+      success: true,
+      data: { schedules }
+    });
+  } catch (error) {
+    console.error('Get AI case schedules error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const reviewAICasePost = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user as { _id: string } | undefined;
+    const { scheduleId } = req.params;
+    const { reviewStatus, reviewNotes } = req.body;
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
+    if (!['approved', 'changes_requested', 'rejected'].includes(reviewStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: 'reviewStatus must be approved, changes_requested, or rejected'
+      });
+    }
+
+    const schedule = await AICasePostSchedule.findByIdAndUpdate(
+      scheduleId,
+      {
+        reviewStatus,
+        reviewNotes: typeof reviewNotes === 'string' ? reviewNotes.trim() : undefined,
+        reviewedBy: user._id,
+        reviewedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!schedule) {
+      return res.status(404).json({ success: false, message: 'AI case schedule not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'AI case review status updated',
+      data: { schedule }
+    });
+  } catch (error) {
+    console.error('Review AI case post error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const publishDueAICasePosts = async (req: AuthRequest, res: Response) => {
+  try {
+    const dueSchedules = await AICasePostSchedule.find({
+      isActive: true,
+      reviewStatus: 'approved',
+      nextRunAt: { $lte: new Date() }
+    }).limit(10);
+
+    const published = [];
+    for (const schedule of dueSchedules) {
+      const generatedCase = schedule.generatedCase;
+      const publishedCase = await Case.create({
+        title: generatedCase.title,
+        description: generatedCase.description,
+        symptoms: generatedCase.symptoms,
+        patientInfo: generatedCase.patientInfo,
+        diagnosis: generatedCase.diagnosis,
+        treatment: generatedCase.treatment,
+        tags: generatedCase.tags,
+        difficulty: generatedCase.difficulty,
+        specialization: generatedCase.specialization,
+        doctor: schedule.author,
+        isPatientCase: false,
+        moderationStatus: 'approved',
+        moderationAuditTrail: [{
+          status: 'approved',
+          reason: 'AI-generated scheduled case approved before publication',
+          reviewedBy: schedule.reviewedBy,
+          reviewedAt: schedule.reviewedAt ?? new Date()
+        }],
+        pointsAwarded: 0
+      });
+
+      schedule.publishedCase = publishedCase._id as any;
+      schedule.lastPublishedAt = new Date();
+      schedule.nextRunAt = getNextAICasePostDate(schedule.nextRunAt, schedule.interval);
+      await schedule.save();
+
+      published.push(publishedCase);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Due AI case drafts published',
+      data: {
+        count: published.length,
+        cases: published
+      }
+    });
+  } catch (error) {
+    console.error('Publish due AI case posts error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
 
 // Reply to a comment
 export const replyToComment = async (req: AuthRequest, res: Response) => {
@@ -183,7 +340,13 @@ export const createCase = async (req: AuthRequest, res: Response) => {
         difficulty: 'beginner', // Default for patient cases
         specialization: 'General Medicine', // Default for patients
         doctor: user._id as any,
-        isPatientCase: true
+        isPatientCase: true,
+        moderationStatus: 'pending',
+        moderationAuditTrail: [{
+          status: 'pending',
+          reason: 'Patient-submitted case awaiting review',
+          reviewedAt: new Date()
+        }]
       });
 
       await newCase.save();
@@ -219,7 +382,14 @@ export const createCase = async (req: AuthRequest, res: Response) => {
       difficulty,
       specialization: specialization || user.specialization,
       doctor: user._id as any,
-      isPatientCase: false
+      isPatientCase: false,
+      moderationStatus: 'approved',
+      moderationAuditTrail: [{
+        status: 'approved',
+        reason: 'Doctor-authored case published automatically',
+        reviewedBy: user._id as any,
+        reviewedAt: new Date()
+      }]
     });
 
     await newCase.save();
@@ -277,7 +447,7 @@ export const getCases = async (req: AuthRequest, res: Response) => {
       search
     } = req.query;
 
-    const filter: any = { isActive: true };
+    const filter: any = { isActive: true, $and: [publicCaseFilter] };
 
     if (specialization) {
       filter.specialization = { $regex: specialization, $options: 'i' };
@@ -362,6 +532,16 @@ export const getCaseById = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const user = req.user as { _id?: string; userType?: string } | undefined;
+    const isOwner = user?._id && caseData.doctor.toString() === user._id.toString();
+    const isApproved = !caseData.moderationStatus || caseData.moderationStatus === 'approved';
+    if (!isApproved && !isOwner && !canModerateCases(user?.userType)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case is awaiting moderation'
+      });
+    }
+
     res.json({
       success: true,
       data: {
@@ -410,6 +590,11 @@ export const updateCase = async (req: AuthRequest, res: Response) => {
     delete updates.doctor; // Prevent changing the doctor
     delete updates.comments; // Comments are handled separately
     delete updates.likes; // Likes are handled separately
+    delete updates.moderationStatus; // Moderation is handled through dedicated endpoints
+    delete updates.moderationReason;
+    delete updates.reviewedBy;
+    delete updates.reviewedAt;
+    delete updates.moderationAuditTrail;
 
     const updatedCase = await Case.findByIdAndUpdate(
       id,
@@ -524,6 +709,19 @@ export const addComment = async (req: AuthRequest, res: Response) => {
     await caseData.save();
     await caseData.populate('comments.author', 'firstName lastName userType');
     const addedComment = caseData.comments[caseData.comments.length - 1];
+
+    // Notify case owner if commenter is a different user
+  const caseAuthorId = (caseData as any).author?.toString();
+    if (caseAuthorId && caseAuthorId !== user._id.toString()) {
+      await createAndEmitNotification({
+        recipientId: caseAuthorId,
+        type:        'comment',
+        message:     `Someone commented on your case: "${(caseData as any).title}"`,
+        link:        `/cases/${id}`,
+        payload:     { caseId: id, commentId: addedComment._id },
+      });
+    }
+
     res.status(201).json({ success: true, message: 'Comment added successfully', data: { comment: addedComment } });
   } catch (error) {
     console.error('Add comment error:', error);
@@ -748,6 +946,159 @@ export const getMyCases = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Get moderation queue counts and pending items
+export const getCaseModerationQueue = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user as { userType?: string };
+    if (!canModerateCases(user?.userType)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only moderators, admins, and doctors can review case submissions'
+      });
+    }
+
+    const {
+      status = 'pending',
+      page = 1,
+      limit = 10
+    } = req.query;
+    const allowedStatuses = ['pending', 'approved', 'rejected', 'changes_requested'];
+    const queueStatus = allowedStatuses.includes(status as string) ? status as string : 'pending';
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit as string, 10) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    const filter = { isActive: true, moderationStatus: queueStatus };
+    const [cases, total, counts] = await Promise.all([
+      Case.find(filter)
+        .populate('doctor', 'firstName lastName userType specialization')
+        .populate('reviewedBy', 'firstName lastName userType')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Case.countDocuments(filter),
+      Case.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: '$moderationStatus', count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const queueCounts = counts.reduce((acc: Record<string, number>, item: { _id?: string; count: number }) => {
+      acc[item._id || 'approved'] = item.count;
+      return acc;
+    }, {
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      changes_requested: 0
+    });
+
+    res.json({
+      success: true,
+      data: {
+        cases,
+        counts: queueCounts,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get case moderation queue error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Approve, reject, or request changes for a case before public publishing
+export const moderateCase = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user as { _id: string; userType?: string };
+    if (!canModerateCases(user?.userType)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only moderators, admins, and doctors can review case submissions'
+      });
+    }
+
+    const { id } = req.params;
+    const { status, reason } = req.body;
+    const allowedStatuses = ['pending', 'approved', 'rejected', 'changes_requested'];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status must be pending, approved, rejected, or changes_requested'
+      });
+    }
+
+    if ((status === 'rejected' || status === 'changes_requested') && !reason?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'A review reason is required when rejecting or requesting changes'
+      });
+    }
+
+    const reviewedAt = new Date();
+    const updatedCase = await Case.findByIdAndUpdate(
+      id,
+      {
+        moderationStatus: status,
+        moderationReason: reason?.trim() || undefined,
+        reviewedBy: user._id as any,
+        reviewedAt,
+        $push: {
+          moderationAuditTrail: {
+            status,
+            reason: reason?.trim() || undefined,
+            reviewedBy: user._id as any,
+            reviewedAt
+          }
+        }
+      },
+      { new: true, runValidators: true }
+    )
+      .populate('doctor', 'firstName lastName userType specialization')
+      .populate('reviewedBy', 'firstName lastName userType');
+
+    if (!updatedCase) {
+      return res.status(404).json({
+        success: false,
+        message: 'Case not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Case ${status.replace('_', ' ')} successfully`,
+      data: {
+        case: updatedCase
+      }
+    });
+  } catch (error: any) {
+    console.error('Moderate case error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 // Add follow-up to case
 export const addFollowUp = async (req: AuthRequest, res: Response) => {
   try {
@@ -853,12 +1204,17 @@ export const generateAISuggestions = async (req: AuthRequest, res: Response) => 
     // In production, this would use AI/ML algorithms
     const similarCases = await Case.find({
       _id: { $ne: id },
-      $or: [
-        { specialization: caseData.specialization },
-        { difficulty: caseData.difficulty },
-        { tags: { $in: caseData.tags } }
-      ],
-      isActive: true
+      isActive: true,
+      $and: [
+        publicCaseFilter,
+        {
+          $or: [
+            { specialization: caseData.specialization },
+            { difficulty: caseData.difficulty },
+            { tags: { $in: caseData.tags } }
+          ]
+        }
+      ]
     })
       .select('title description specialization difficulty tags')
       .limit(5)

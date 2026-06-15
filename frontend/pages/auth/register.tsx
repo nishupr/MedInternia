@@ -113,6 +113,11 @@ export default function Register() {
 
     return () => clearInterval(interval);
   }, [isGoogleSignup, step]);
+  // GSSoC: Loading state for submit button
+  const [loading, setLoading] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
@@ -211,7 +216,7 @@ export default function Register() {
     setVerifyingOtp(true);
     setOtpError('');
     try {
-  const res = await fetch('http://localhost:3000/api/auth/verify-otp', {
+      const res = await fetch('http://localhost:3000/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, otp })
@@ -242,6 +247,11 @@ export default function Register() {
       setError('Please fill all required fields.');
       return;
     }
+    if (confirmPassword !== form.password) {
+      setConfirmPasswordError('Passwords do not match');
+      return;
+    }
+    setConfirmPasswordError('');
     setStep(2);
   };
 
@@ -253,10 +263,33 @@ export default function Register() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setError('');
-
     const phoneValidationError = getOptionalPhoneError(form.phone);
     const emergencyPhoneValidationError = getOptionalPhoneError(form.emergencyContactPhone, 'emergency contact number');
+    const dob = form.dateOfBirth ? new Date(form.dateOfBirth) : null;
+    const today = new Date();
+    
+    if(form.userType === 'patient' && form.phone===form.emergencyContactPhone){
+      setError('Phone number and emergency contact number cannot be the same.');
+      return;
+    }
 
+    if(form.userType=='doctor' && parseInt(form.experience,10)<0) {
+      setError('Experience cannot be a negative number.');
+      return;
+    }
+    if(form.userType === 'doctor' && !/^[A-Za-z0-9\/\- ]{4,30}$/.test(form.licenseNumber)) {
+      setError('License number must be 4-30 characters and can include letters, numbers, spaces, slashes, or dashes.');
+      return;
+    }
+    let age = today.getFullYear() - (dob ? dob.getFullYear() : today.getFullYear());
+    if(dob && dob > today) {
+      setError('Date of birth cannot be in the future.');
+      return;
+    }
+    if (form.userType === 'doctor' && dob && (age < 17)) {
+      setError('Minimum age requirement not met.');
+      return;
+    }
     setPhoneError(phoneValidationError);
     setEmergencyPhoneError(emergencyPhoneValidationError);
 
@@ -277,6 +310,8 @@ export default function Register() {
       setError('Please fill all required fields.');
       return;
     }
+    // GSSoC: Show loading spinner while request is in-flight
+    setLoading(true);
     try {
       if (isGoogleSignup) {
         const res = await api.post('/auth/google', {
@@ -297,8 +332,25 @@ export default function Register() {
         await api.post('/auth/register', form);
         router.push('/auth/login');
       }
+      // Build payload — omit empty optional ObjectId fields so Mongoose doesn't
+      // try to cast an empty string to an ObjectId and throw a 400.
+      const payload: Record<string, any> = { ...form };
+      if (!payload.mentorDoctor) delete payload.mentorDoctor;
+      if (!payload.phone) delete payload.phone;
+      if (!payload.dateOfBirth) delete payload.dateOfBirth;
+      if (!payload.gender) delete payload.gender;
+
+      const res=await api.post('/auth/register', payload);
+      const user = res.data.data.user;
+      localStorage.setItem('token', res.data.data.token);
+      localStorage.setItem('userId', user._id || user.id);
+      localStorage.setItem('user', JSON.stringify(user));
+        
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -312,7 +364,8 @@ export default function Register() {
       py: 6
     }}>
       <Fade in timeout={900}>
-        <Card elevation={8} sx={{ p: 4, borderRadius: 5, minWidth: 370, maxWidth: 450, width: '100%', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)' }}>
+        {/* GSSoC: card-enter adds fade-in-up; mobile width improved */}
+        <Card elevation={8} className="card-enter" sx={{ p: { xs: 3, sm: 4 }, borderRadius: 5, minWidth: { xs: 0, sm: 370 }, maxWidth: 450, width: '100%', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
             <Avatar sx={{ bgcolor: 'white', width: 80, height: 80, mb: 1, boxShadow: 3 }}>
               <img src="/med-internia-logo.jpg" alt="MedInternia Logo" style={{ width: '100%', height: '100%' }} />
@@ -447,6 +500,43 @@ export default function Register() {
                       }}
                     />
                     )}
+                    <TextField
+                      label="Confirm Password"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      fullWidth
+                      margin="normal"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (e.target.value !== form.password) {
+                          setConfirmPasswordError('Passwords do not match');
+                        } else {
+                          setConfirmPasswordError('');
+                        }
+                      }}
+                      required
+                      error={Boolean((confirmPassword && confirmPassword !== form.password) || (!confirmPassword && confirmPasswordError))}
+                      helperText={
+                        confirmPassword && confirmPassword !== form.password
+                          ? 'Passwords do not match'
+                          : !confirmPassword
+                            ? confirmPasswordError
+                            : ''
+                      }
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowConfirmPassword((show) => !show)}
+                              edge="end"
+                              sx={{ color: 'text.secondary' }}
+                            >
+                              {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
                     <TextField select label="User Type" name="userType" fullWidth margin="normal" value={form.userType} onChange={handleChange} required>
                       <MenuItem value="patient">Patient</MenuItem>
                       <MenuItem value="doctor">Doctor</MenuItem>
@@ -455,9 +545,26 @@ export default function Register() {
                     <Button
                       type="submit"
                       variant="contained"
-                      color="primary"
                       fullWidth
-                      sx={{ mt: 2, py: 1.3, fontWeight: 700, fontSize: '1.1rem', borderRadius: 3, boxShadow: '0 4px 20px 0 rgba(31, 38, 135, 0.10)', transition: 'all 0.2s', '&:hover': { background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)', transform: 'scale(1.03)', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)' } }}
+                      sx={{
+                        mt: 2,
+                        py: 1.3,
+                        fontWeight: 800,
+                        fontSize: '1.1rem',
+                        borderRadius: 3,
+                        letterSpacing: 0.5,
+                        background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)',
+                        color: '#ffffff',
+                        boxShadow: '0 4px 20px 0 rgba(33, 147, 176, 0.13)',
+                        transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                        textTransform: 'uppercase',
+                        '&:hover': {
+                          background: 'linear-gradient(90deg, #1565c0 0%, #2193b0 100%)',
+                          transform: 'scale(1.03)',
+                          boxShadow: '0 8px 32px 0 rgba(33, 147, 176, 0.18)',
+                          color: '#ffffff'
+                        }
+                      }}
                     >
                       Next
                     </Button>
@@ -497,29 +604,29 @@ export default function Register() {
                       <MenuItem value="other">Other</MenuItem>
                     </TextField>
 
-                      {/* Doctor-specific fields */}
-                      {form.userType === 'doctor' && (
-                        <Fade in timeout={600}>
-                          <Box>
-                            <TextField label="Specialization" name="specialization" fullWidth margin="normal" value={form.specialization} onChange={handleChange} required />
-                            <TextField label="License Number" name="licenseNumber" fullWidth margin="normal" value={form.licenseNumber} onChange={handleChange} required />
-                            <TextField label="Experience (years)" name="experience" type="number" fullWidth margin="normal" value={form.experience} onChange={handleChange} />
-                            <TextField label="Qualifications (comma separated)" name="qualifications" fullWidth margin="normal" value={form.qualifications} onChange={handleChange} />
-                          </Box>
-                        </Fade>
-                      )}
+                    {/* Doctor-specific fields */}
+                    {form.userType === 'doctor' && (
+                      <Fade in timeout={600}>
+                        <Box>
+                          <TextField label="Specialization" name="specialization" fullWidth margin="normal" value={form.specialization} onChange={handleChange} required />
+                          <TextField label="License Number" name="licenseNumber" fullWidth margin="normal" value={form.licenseNumber} onChange={handleChange} required />
+                          <TextField label="Experience (years)" name="experience" type="number" fullWidth margin="normal" value={form.experience} onChange={handleChange} />
+                          <TextField label="Qualifications (comma separated)" name="qualifications" fullWidth margin="normal" value={form.qualifications} onChange={handleChange} />
+                        </Box>
+                      </Fade>
+                    )}
 
-                      {/* Intern-specific fields */}
-                      {form.userType === 'intern' && (
-                        <Fade in timeout={600}>
-                          <Box>
-                            <TextField label="Medical School" name="medicalSchool" fullWidth margin="normal" value={form.medicalSchool} onChange={handleChange} required />
-                            <TextField label="Year of Study" name="yearOfStudy" type="number" fullWidth margin="normal" value={form.yearOfStudy} onChange={handleChange} required />
-                            <TextField label="Interests (comma separated)" name="interests" fullWidth margin="normal" value={form.interests} onChange={handleChange} />
-                            <TextField label="Mentor Doctor ID (optional)" name="mentorDoctor" fullWidth margin="normal" value={form.mentorDoctor} onChange={handleChange} />
-                          </Box>
-                        </Fade>
-                      )}
+                    {/* Intern-specific fields */}
+                    {form.userType === 'intern' && (
+                      <Fade in timeout={600}>
+                        <Box>
+                          <TextField label="Medical School" name="medicalSchool" fullWidth margin="normal" value={form.medicalSchool} onChange={handleChange} required />
+                          <TextField label="Year of Study" name="yearOfStudy" type="number" fullWidth margin="normal" value={form.yearOfStudy} onChange={handleChange} required />
+                          <TextField label="Interests (comma separated)" name="interests" fullWidth margin="normal" value={form.interests} onChange={handleChange} />
+                          <TextField label="Mentor Doctor ID (optional)" name="mentorDoctor" fullWidth margin="normal" value={form.mentorDoctor} onChange={handleChange} />
+                        </Box>
+                      </Fade>
+                    )}
 
                     {/* Patient-specific fields */}
                     {form.userType === 'patient' && (
@@ -537,18 +644,96 @@ export default function Register() {
                             helperText={emergencyPhoneError || 'Enter a 10-digit mobile number'}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 10 }}
                           />
-                          <TextField label="Emergency Contact Relationship" name="emergencyContactRelationship" fullWidth margin="normal" value={form.emergencyContactRelationship} onChange={handleChange} />
-                          <TextField label="Medical History (comma separated)" name="medicalHistory" fullWidth margin="normal" value={form.medicalHistory} onChange={handleChange} />
-                          <TextField label="Allergies (comma separated)" name="allergies" fullWidth margin="normal" value={form.allergies} onChange={handleChange} />
+                          <TextField
+                            select
+                            label="Emergency Contact Relationship"
+                            name="emergencyContactRelationship"
+                            fullWidth
+                            margin="normal"
+                            value={form.emergencyContactRelationship}
+                            onChange={handleChange}
+                          >
+                            <MenuItem value="">Select relationship</MenuItem>
+                            <MenuItem value="Spouse">Spouse</MenuItem>
+                            <MenuItem value="Parent">Parent</MenuItem>
+                            <MenuItem value="Sibling">Sibling</MenuItem>
+                            <MenuItem value="Child">Child</MenuItem>
+                            <MenuItem value="Friend">Friend</MenuItem>
+                            <MenuItem value="Guardian">Guardian</MenuItem>
+                            <MenuItem value="Other">Other</MenuItem>
+                          </TextField>
+                          <TextField
+                            select
+                            label="Medical History"
+                            name="medicalHistory"
+                            fullWidth
+                            margin="normal"
+                            value={form.medicalHistory}
+                            onChange={handleChange}
+                          >
+                            <MenuItem value="">Select medical history</MenuItem>
+                            <MenuItem value="None">None</MenuItem>
+                            <MenuItem value="Hypertension">Hypertension</MenuItem>
+                            <MenuItem value="Diabetes">Diabetes</MenuItem>
+                            <MenuItem value="Asthma">Asthma</MenuItem>
+                            <MenuItem value="Heart Disease">Heart Disease</MenuItem>
+                            <MenuItem value="Thyroid Disorder">Thyroid Disorder</MenuItem>
+                            <MenuItem value="Kidney Disease">Kidney Disease</MenuItem>
+                            <MenuItem value="Cancer">Cancer</MenuItem>
+                            <MenuItem value="Other">Other</MenuItem>
+                          </TextField>
+                          <TextField
+                            select
+                            label="Allergies"
+                            name="allergies"
+                            fullWidth
+                            margin="normal"
+                            value={form.allergies}
+                            onChange={handleChange}
+                          >
+                            <MenuItem value="">Select allergies</MenuItem>
+                            <MenuItem value="None">None</MenuItem>
+                            <MenuItem value="Penicillin">Penicillin</MenuItem>
+                            <MenuItem value="Latex">Latex</MenuItem>
+                            <MenuItem value="Peanuts">Peanuts</MenuItem>
+                            <MenuItem value="Shellfish">Shellfish</MenuItem>
+                            <MenuItem value="Dust">Dust</MenuItem>
+                            <MenuItem value="Pollen">Pollen</MenuItem>
+                            <MenuItem value="Animal Dander">Animal Dander</MenuItem>
+                            <MenuItem value="Other">Other</MenuItem>
+                          </TextField>
                         </Box>
                       </Fade>
                     )}
                     <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                      <Button variant="outlined" color="primary" onClick={handleBack} sx={{ flex: 1, py: 1.3, fontWeight: 700, fontSize: '1.1rem', borderRadius: 3 }}>Back</Button>
+                      <Button
+                        variant="outlined"
+                        onClick={handleBack}
+                        sx={{
+                          flex: 1,
+                          py: 1.3,
+                          fontWeight: 700,
+                          fontSize: '1.1rem',
+                          borderRadius: 3,
+                          border: '2px solid #2193b0',
+                          color: '#2193b0',
+                          transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                          '&:hover': {
+                            border: '2px solid #1565c0',
+                            background: 'rgba(33, 147, 176, 0.05)',
+                            color: '#1565c0',
+                            transform: 'scale(1.02)'
+                          }
+                        }}
+                      >
+                        Back
+                      </Button>
+                      {/* GSSoC: Disabled + spinner when loading */}
                       <Button
                         type="submit"
                         variant="contained"
-                        color="primary"
+                        disabled={loading}
+                        aria-label="Register"
                         sx={{
                           flex: 1,
                           py: 1.3,
@@ -557,17 +742,19 @@ export default function Register() {
                           borderRadius: 3,
                           letterSpacing: 1,
                           background: 'linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%)',
+                          color: '#ffffff',
                           boxShadow: '0 4px 20px 0 rgba(33,147,176,0.13)',
-                          transition: 'all 0.18s',
+                          transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
                           textTransform: 'uppercase',
                           '&:hover': {
                             background: 'linear-gradient(90deg, #1565c0 0%, #2193b0 100%)',
                             transform: 'scale(1.04)',
-                            boxShadow: '0 8px 32px 0 rgba(33,147,176,0.18)'
+                            boxShadow: '0 8px 32px 0 rgba(33,147,176,0.18)',
+                            color: '#ffffff'
                           }
                         }}
                       >
-                        Register
+                        {loading ? <CircularProgress size={22} color="inherit" /> : 'Register'}
                       </Button>
                     </Stack>
                   </>
