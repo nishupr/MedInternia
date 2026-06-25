@@ -1,4 +1,4 @@
-﻿import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response } from 'express';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { setSocketIO } from './utils/socket';
@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import connectDB from './utils/database';
 import { createDefaultBadges } from './utils/createDefaultBadges';
 import apiRoutes from './routes/api';
+import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -136,6 +137,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 app.use('/api', apiRoutes);
+app.use(errorHandler);
 
 // Create HTTP server (required for Socket.io)
 const httpServer = http.createServer(app);
