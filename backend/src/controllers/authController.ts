@@ -147,7 +147,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     // Check if license number already exists
     const existingLicense = await User.findOne({ licenseNumber });
     if (existingLicense) {
-      throw new AppError("Doctor with this license number already exists", 400);
+      throw new AppError("Doctor with this license number already exists", 409);
     }
   }
 
@@ -484,10 +484,12 @@ export const resetPassword = asyncHandler(
     }
     const result = await consumeOtp(email, 'reset', otp);
     if (!result.valid) {
-      return res.status(400).json({ success: false, message: result.message });
+      throw new AppError(result.message || "Invalid OTP", 400);
     }
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
     user.password = newPassword;
     await user.save();
     return res.json({ success: true, message: 'Password reset successfully' });
