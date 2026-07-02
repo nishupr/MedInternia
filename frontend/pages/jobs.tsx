@@ -33,6 +33,7 @@ import api from "../utils/api";
 import { hasAuthToken, redirectToLogin } from "../utils/authRedirect";
 import { getCurrentUserRole } from "../utils/permissions";
 import RecentlyViewedInternships from "../components/RecentlyViewedInternships";
+import DeadlineCountdown from "../components/DeadlineCountdown";
 
 interface JobApplication {
   id: string;
@@ -229,6 +230,7 @@ export default function Jobs() {
                               <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                 <Chip label={j.status} color={j.status === 'Open' ? 'success' : 'default'} size="small" sx={{ fontWeight: 700 }} />
                                 {j.salary && <Chip label={j.salary} size="small" variant="outlined" />}
+                                <DeadlineCountdown deadline={j.applicationDeadline} />
                               </Box>
 
                               <Divider sx={{ my: 2 }} />
@@ -284,8 +286,11 @@ export default function Jobs() {
                                   <BookmarkIcon />
                                 </IconButton>
                               </Stack>
-                              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 3 }}>
+                              <Stack direction="row" spacing={1} sx={{ mt: 3 }} flexWrap="wrap" useFlexGap>
                                 <Chip label={j.status} color={j.status === 'Open' ? 'success' : 'default'} size="small" sx={{ fontWeight: 700 }} />
+                                <DeadlineCountdown deadline={j.applicationDeadline} />
+                              </Stack>
+                              <Stack direction="row" justifyContent="flex-end" alignItems="center" sx={{ mt: 1.5 }}>
                                 {j.status === "Open" ? (
                                   <Button 
                                     variant="contained" 
@@ -407,3 +412,4 @@ export default function Jobs() {
     </Box>
   );
 }
+
