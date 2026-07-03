@@ -150,6 +150,43 @@ export default function MeProfilePage() {
           </Typography>
         </Box>
       </Card>
+      {/* Achievements Card */}
+      <Card sx={{ p: 4, borderRadius: 4, background: "#f8f9fa", mb: 4 }}>
+        <Typography variant="h6" fontWeight={600} mb={2}>
+          Recent Achievements
+        </Typography>
+        <Box display="flex" gap={1} flexWrap="wrap">
+          <Chip
+            icon={
+              <span className="material-icons" style={{ color: "#FFD700" }}>
+                emoji_events
+              </span>
+            }
+            label="Champion"
+            color="warning"
+            sx={{ fontWeight: 600 }}
+          />
+          <Chip
+            icon={
+              <span className="material-icons" style={{ color: "#0072ff" }}>
+                star
+              </span>
+            }
+            label="Expert Reviewer"
+            color="primary"
+            sx={{ fontWeight: 600 }}
+          />
+          <Chip
+            icon={
+              <span className="material-icons" style={{ color: "#6dd5ed" }}>
+                trending_up
+              </span>
+            }
+            label="Growth Master"
+            sx={{ fontWeight: 600, bgcolor: "#e0eafc" }}
+          />
+        </Box>
+      </Card>
 
       {/* Grid for details and metrics */}
       <Grid container spacing={4}>

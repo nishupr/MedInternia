@@ -32,6 +32,9 @@ import { useRouter } from "next/router";
 import api from "../utils/api";
 import { hasAuthToken, redirectToLogin } from "../utils/authRedirect";
 import { getCurrentUserRole } from "../utils/permissions";
+import PageHeader from "../components/layout/PageHeader";
+import EmptyState from "../components/layout/EmptyState";
+import { Briefcase } from "lucide-react";
 import RecentlyViewedInternships from "../components/RecentlyViewedInternships";
 import DeadlineCountdown from "../components/DeadlineCountdown";
 
@@ -137,12 +140,17 @@ export default function Jobs() {
 
   if (loading)
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-        <CircularProgress />
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+        <CircularProgress aria-label="Loading job opportunities" />
       </Box>
     );
-  if (error) return <Alert severity="error">{error}</Alert>;
-
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
   const savedJobs = jobs.filter(j => savedJobIds.includes(j._id));
 
   // Career recommendations based on user role
@@ -151,265 +159,257 @@ export default function Jobs() {
     .slice(0, 2);
 
   return (
-    <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh', py: 4 }}>
-      <Container maxWidth="lg">
-        {isPatient ? (
-          <Alert severity="info" sx={{ mb: 3, textAlign: "center", borderRadius: 3 }}>
-            Job opportunities are currently available for doctors and interns.
-          </Alert>
-        ) : (
-          <Box sx={{ width: "100%", mb: 3 }}>
-            <RecentlyViewedInternships />
-          </Box>
-        )}
+    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, minHeight: "80vh" }}>
+      <PageHeader
+        title="Career Dashboard"
+        subtitle="Find residency openings, fellowships, and clinical job opportunities tailored for doctors and interns."
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Jobs" }]}
+      />
 
-        <Box sx={{ mb: 4, textAlign: "center" }}>
-          <Typography variant="h3" fontWeight={900} color="#1565c0" gutterBottom>
-            Career Dashboard
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Find residency openings, fellowships, and clinical job opportunities.
-          </Typography>
+      {isPatient ? (
+        <Alert severity="info" sx={{ mb: 3, borderRadius: 3 }}>
+          Job opportunities are currently available for doctors and interns.
+        </Alert>
+      ) : (
+        <Box sx={{ width: "100%", mb: 3 }}>
+          <RecentlyViewedInternships />
         </Box>
+      )}
 
-        {isPatient ? (
-          <Card sx={{ p: 4, textAlign: 'center', borderRadius: 4 }}>
-            <Typography color="text.secondary">
-              Patients do not see job opportunities on this platform.
-            </Typography>
-          </Card>
-        ) : (
-          <Box>
-            <Tabs
-              value={activeTab}
-              onChange={(e, val) => setActiveTab(val)}
-              centered
-              sx={{ mb: 4, borderBottom: '1px solid #e3eafc' }}
-            >
-              <Tab label="Explore Jobs" sx={{ fontWeight: 600 }} />
-              <Tab label={`Saved (${savedJobs.length})`} sx={{ fontWeight: 600 }} />
-              <Tab label={`Application Tracker (${applications.length})`} sx={{ fontWeight: 600 }} />
-            </Tabs>
+      {isPatient ? (
+        <Card sx={{ p: 4, textAlign: 'center', borderRadius: 4 }}>
+          <Typography color="text.secondary">
+            Patients do not see job opportunities on this platform.
+          </Typography>
+        </Card>
+      ) : (
+        <Box>
+          <Tabs
+            value={activeTab}
+            onChange={(e, val) => setActiveTab(val)}
+            centered
+            sx={{ mb: 4, borderBottom: '1px solid #e3eafc' }}
+          >
+            <Tab label="Explore Jobs" sx={{ fontWeight: 600 }} />
+            <Tab label={`Saved (${savedJobs.length})`} sx={{ fontWeight: 600 }} />
+            <Tab label={`Application Tracker (${applications.length})`} sx={{ fontWeight: 600 }} />
+          </Tabs>
 
-            <Grid container spacing={4}>
-              {/* Main Tab Content */}
-              <Grid size={{ xs: 12, md: 8 }}>
-                {activeTab === 0 && (
-                  <Stack spacing={3}>
-                    {jobs.length === 0 ? (
-                      <Typography align="center" color="text.secondary">No job opportunities found.</Typography>
-                    ) : (
-                      jobs.map((j) => {
-                        const isSaved = savedJobIds.includes(j._id);
-                        const isApplied = applications.some(app => app.id === j._id);
+          <Grid container spacing={4}>
+            {/* Main Tab Content */}
+            <Grid size={{ xs: 12, md: 8 }}>
+              {activeTab === 0 && (
+                <Stack spacing={3}>
+                  {jobs.length === 0 ? (
+                    <Typography align="center" color="text.secondary">No job opportunities found.</Typography>
+                  ) : (
+                    jobs.map((j) => {
+                      const isSaved = savedJobIds.includes(j._id);
+                      const isApplied = applications.some(app => app.id === j._id);
 
-                        return (
-                          <Card key={j._id} sx={{ borderRadius: 4, border: '1px solid #e3eafc', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-                            <CardContent sx={{ p: 3 }}>
-                              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                                <Box>
-                                  <Typography variant="h6" fontWeight={700} color="primary">
-                                    {j.title}
-                                  </Typography>
-                                  <Stack direction="row" spacing={2} sx={{ mt: 1, color: 'text.secondary' }} flexWrap="wrap" useFlexGap>
-                                    <Stack direction="row" spacing={0.5} alignItems="center">
-                                      <BusinessIcon sx={{ fontSize: 18 }} />
-                                      <Typography variant="caption">{j.company || 'MedInternia Partners'}</Typography>
-                                    </Stack>
-                                    <Stack direction="row" spacing={0.5} alignItems="center">
-                                      <RoomIcon sx={{ fontSize: 18 }} />
-                                      <Typography variant="caption">{j.location}</Typography>
-                                    </Stack>
-                                  </Stack>
-                                </Box>
-                                <IconButton onClick={() => toggleSaveJob(j._id)} color="primary">
-                                  {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
-                                </IconButton>
-                              </Stack>
-
-                              <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                <Chip label={j.status} color={j.status === 'Open' ? 'success' : 'default'} size="small" sx={{ fontWeight: 700 }} />
-                                {j.salary && <Chip label={j.salary} size="small" variant="outlined" />}
-                                <DeadlineCountdown deadline={j.applicationDeadline} />
-                              </Box>
-
-                              <Divider sx={{ my: 2 }} />
-
-                              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                <Typography variant="caption" color="text.secondary">
-                                  Posted: {new Date(j.createdAt || Date.now()).toLocaleDateString()}
+                      return (
+                        <Card key={j._id} sx={{ borderRadius: 4, border: '1px solid #e3eafc', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                          <CardContent sx={{ p: 3 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                              <Box>
+                                <Typography variant="h6" fontWeight={700} color="primary">
+                                  {j.title}
                                 </Typography>
-                                {j.status === "Open" ? (
-                                  <Button 
-                                    variant="contained" 
-                                    color={isApplied ? "success" : "primary"}
-                                    onClick={() => handleApply(j)}
-                                    disabled={isApplied}
-                                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
-                                  >
-                                    {isApplied ? "Applied" : "Apply"}
-                                  </Button>
-                                ) : (
-                                  <Button variant="outlined" disabled sx={{ borderRadius: 2, textTransform: 'none' }}>
-                                    Closed
-                                  </Button>
-                                )}
-                              </Stack>
-                            </CardContent>
-                          </Card>
-                        );
-                      })
-                    )}
-                  </Stack>
-                )}
+                                <Stack direction="row" spacing={2} sx={{ mt: 1, color: 'text.secondary' }} flexWrap="wrap" useFlexGap>
+                                  <Stack direction="row" spacing={0.5} alignItems="center">
+                                    <BusinessIcon sx={{ fontSize: 18 }} />
+                                    <Typography variant="caption">{j.company || 'MedInternia Partners'}</Typography>
+                                  </Stack>
+                                  <Stack direction="row" spacing={0.5} alignItems="center">
+                                    <RoomIcon sx={{ fontSize: 18 }} />
+                                    <Typography variant="caption">{j.location}</Typography>
+                                  </Stack>
+                                </Stack>
+                              </Box>
+                              <IconButton onClick={() => toggleSaveJob(j._id)} color="primary">
+                                {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                              </IconButton>
+                            </Stack>
 
-                {activeTab === 1 && (
-                  <Stack spacing={3}>
-                    {savedJobs.length === 0 ? (
-                      <Alert severity="info" sx={{ borderRadius: 3 }}>
-                        No saved opportunities. Go to 'Explore Jobs' and click the bookmark icon to save job postings!
-                      </Alert>
-                    ) : (
-                      savedJobs.map((j) => {
-                        const isApplied = applications.some(app => app.id === j._id);
-                        return (
-                          <Card key={j._id} sx={{ borderRadius: 4, border: '1px solid #e3eafc', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-                            <CardContent sx={{ p: 3 }}>
-                              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                                <Box>
-                                  <Typography variant="h6" fontWeight={700} color="primary">
-                                    {j.title}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">{j.location}</Typography>
-                                </Box>
-                                <IconButton onClick={() => toggleSaveJob(j._id)} color="primary">
-                                  <BookmarkIcon />
-                                </IconButton>
-                              </Stack>
-                              <Stack direction="row" spacing={1} sx={{ mt: 3 }} flexWrap="wrap" useFlexGap>
-                                <Chip label={j.status} color={j.status === 'Open' ? 'success' : 'default'} size="small" sx={{ fontWeight: 700 }} />
-                                <DeadlineCountdown deadline={j.applicationDeadline} />
-                              </Stack>
-                              <Stack direction="row" justifyContent="flex-end" alignItems="center" sx={{ mt: 1.5 }}>
-                                {j.status === "Open" ? (
-                                  <Button 
-                                    variant="contained" 
-                                    color={isApplied ? "success" : "primary"}
-                                    onClick={() => handleApply(j)}
-                                    disabled={isApplied}
-                                    sx={{ borderRadius: 2, textTransform: 'none' }}
-                                  >
-                                    {isApplied ? "Applied" : "Apply"}
-                                  </Button>
-                                ) : (
-                                  <Button variant="outlined" disabled sx={{ borderRadius: 2 }}>Closed</Button>
-                                )}
-                              </Stack>
-                            </CardContent>
-                          </Card>
-                        );
-                      })
-                    )}
-                  </Stack>
-                )}
+                            <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                              <Chip label={j.status} color={j.status === 'Open' ? 'success' : 'default'} size="small" sx={{ fontWeight: 700 }} />
+                              {j.salary && <Chip label={j.salary} size="small" variant="outlined" />}
+                              <DeadlineCountdown deadline={j.applicationDeadline} />
+                            </Box>
 
-                {activeTab === 2 && (
-                  <Card sx={{ borderRadius: 4, border: '1px solid #e3eafc', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-                        Submitted Applications
-                      </Typography>
-                      {applications.length === 0 ? (
-                        <Alert severity="info" sx={{ borderRadius: 3 }}>
-                          No applications tracked yet. Click 'Apply' on any open job to add it to the tracker.
-                        </Alert>
-                      ) : (
-                        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3 }}>
-                          <Table aria-label="application tracker table">
-                            <TableHead sx={{ bgcolor: '#f8fafc' }}>
-                              <TableRow>
-                                <TableCell><strong>Position / Company</strong></TableCell>
-                                <TableCell><strong>Applied Date</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {applications.map((app) => (
-                                <TableRow key={app.id}>
-                                  <TableCell>
-                                    <Typography variant="body2" fontWeight={700}>{app.title}</Typography>
-                                    <Typography variant="caption" color="text.secondary">{app.company} - {app.location}</Typography>
-                                  </TableCell>
-                                  <TableCell>{app.appliedDate}</TableCell>
-                                  <TableCell>
-                                    <Chip 
-                                      label={app.status} 
-                                      size="small" 
-                                      color={
-                                        app.status === 'Offered' ? 'success' : 
-                                        app.status === 'Interviewing' ? 'warning' : 'primary'
-                                      }
-                                      sx={{ fontWeight: 700 }}
-                                    />
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </Grid>
+                            <Divider sx={{ my: 2 }} />
 
-              {/* Sidebar: Recommendations Widget */}
-              <Grid size={{ xs: 12, md: 4 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="caption" color="text.secondary">
+                                Posted: {new Date(j.createdAt || Date.now()).toLocaleDateString()}
+                              </Typography>
+                              {j.status === "Open" ? (
+                                <Button 
+                                  variant="contained" 
+                                  color={isApplied ? "success" : "primary"}
+                                  onClick={() => handleApply(j)}
+                                  disabled={isApplied}
+                                  sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+                                >
+                                  {isApplied ? "Applied" : "Apply"}
+                                </Button>
+                              ) : (
+                                <Button variant="outlined" disabled sx={{ borderRadius: 2, textTransform: 'none' }}>
+                                  Closed
+                                </Button>
+                              )}
+                            </Stack>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
+                </Stack>
+              )}
+
+              {activeTab === 1 && (
+                <Stack spacing={3}>
+                  {savedJobs.length === 0 ? (
+                    <Alert severity="info" sx={{ borderRadius: 3 }}>
+                      No saved opportunities. Go to 'Explore Jobs' and click the bookmark icon to save job postings!
+                    </Alert>
+                  ) : (
+                    savedJobs.map((j) => {
+                      const isApplied = applications.some(app => app.id === j._id);
+                      return (
+                        <Card key={j._id} sx={{ borderRadius: 4, border: '1px solid #e3eafc', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                          <CardContent sx={{ p: 3 }}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                              <Box>
+                                <Typography variant="h6" fontWeight={700} color="primary">
+                                  {j.title}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">{j.location}</Typography>
+                              </Box>
+                              <IconButton onClick={() => toggleSaveJob(j._id)} color="primary">
+                                <BookmarkIcon />
+                              </IconButton>
+                            </Stack>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 3 }}>
+                              <Chip label={j.status} color={j.status === 'Open' ? 'success' : 'default'} size="small" sx={{ fontWeight: 700 }} />
+                              {j.status === "Open" ? (
+                                <Button 
+                                  variant="contained" 
+                                  color={isApplied ? "success" : "primary"}
+                                  onClick={() => handleApply(j)}
+                                  disabled={isApplied}
+                                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                                >
+                                  {isApplied ? "Applied" : "Apply"}
+                                </Button>
+                              ) : (
+                                <Button variant="outlined" disabled sx={{ borderRadius: 2 }}>Closed</Button>
+                              )}
+                            </Stack>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
+                </Stack>
+              )}
+
+              {activeTab === 2 && (
                 <Card sx={{ borderRadius: 4, border: '1px solid #e3eafc', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
                   <CardContent sx={{ p: 3 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                      <WorkIcon color="primary" />
-                      <Typography variant="subtitle1" fontWeight={700}>
-                        Recommended for You
-                      </Typography>
-                    </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                      Career matches based on your medical profile and interests:
+                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+                      Submitted Applications
                     </Typography>
-                    {recommendedJobs.length === 0 ? (
-                      <Typography variant="caption" color="text.secondary">No recommended positions available.</Typography>
+                    {applications.length === 0 ? (
+                      <Alert severity="info" sx={{ borderRadius: 3 }}>
+                        No applications tracked yet. Click 'Apply' on any open job to add it to the tracker.
+                      </Alert>
                     ) : (
-                      <Stack spacing={2.5}>
-                        {recommendedJobs.map((j) => (
-                          <Box key={j._id} sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
-                            <Typography variant="body2" fontWeight={700} color="primary" gutterBottom>
-                              {j.title}
-                            </Typography>
-                            <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1.5 }}>
-                              {j.location}
-                            </Typography>
-                            <Button 
-                              variant="outlined" 
-                              size="small" 
-                              onClick={() => {
-                                setActiveTab(0);
-                              }}
-                              sx={{ borderRadius: 2, textTransform: 'none', fontSize: 11 }}
-                            >
-                              View Opportunity
-                            </Button>
-                          </Box>
-                        ))}
-                      </Stack>
+                      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3 }}>
+                        <Table aria-label="application tracker table">
+                          <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                            <TableRow>
+                              <TableCell><strong>Position / Company</strong></TableCell>
+                              <TableCell><strong>Applied Date</strong></TableCell>
+                              <TableCell><strong>Status</strong></TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {applications.map((app) => (
+                              <TableRow key={app.id}>
+                                <TableCell>
+                                  <Typography variant="body2" fontWeight={700}>{app.title}</Typography>
+                                  <Typography variant="caption" color="text.secondary">{app.company} - {app.location}</Typography>
+                                </TableCell>
+                                <TableCell>{app.appliedDate}</TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    label={app.status} 
+                                    size="small" 
+                                    color={
+                                      app.status === 'Offered' ? 'success' : 
+                                      app.status === 'Interviewing' ? 'warning' : 'primary'
+                                    }
+                                    sx={{ fontWeight: 700 }}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              )}
             </Grid>
-          </Box>
-        )}
-      </Container>
-    </Box>
+
+            {/* Sidebar: Recommendations Widget */}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Card sx={{ borderRadius: 4, border: '1px solid #e3eafc', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                    <WorkIcon color="primary" />
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      Recommended for You
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Career matches based on your medical profile and interests:
+                  </Typography>
+                  {recommendedJobs.length === 0 ? (
+                    <Typography variant="caption" color="text.secondary">No recommended positions available.</Typography>
+                  ) : (
+                    <Stack spacing={2.5}>
+                      {recommendedJobs.map((j) => (
+                        <Box key={j._id} sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+                          <Typography variant="body2" fontWeight={700} color="primary" gutterBottom>
+                            {j.title}
+                          </Typography>
+                          <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1.5 }}>
+                            {j.location}
+                          </Typography>
+                          <Button 
+                            variant="outlined" 
+                            size="small" 
+                            onClick={() => {
+                              setActiveTab(0);
+                            }}
+                            sx={{ borderRadius: 2, textTransform: 'none', fontSize: 11 }}
+                          >
+                            View Opportunity
+                          </Button>
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+    </Container>
   );
 }
 
