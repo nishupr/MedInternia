@@ -54,7 +54,6 @@ export default function Cases() {
   const [recMessage, setRecMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [canCreateCases, setCanCreateCases] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Filters State
@@ -68,23 +67,16 @@ export default function Cases() {
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [openDiscussionId, setOpenDiscussionId] = useState<string | null>(null);
-  const [canCreateCases, setCanCreateCases] = useState(false);
   const userRole = getCurrentUserRole();
   const theme = useTheme();
   const router = useRouter();
+  const canCreateCases = canUser(userRole, "case:create");
 
   // Check login state and permissions
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       setIsLoggedIn(true);
-      api
-        .get("/auth/profile")
-        .then((res) => {
-          const userType = res.data?.data?.user?.userType;
-          setCanCreateCases(canUser(userType, "case:create"));
-        })
-        .catch(() => setCanCreateCases(false));
 
       // Fetch recommended cases
       api
@@ -97,6 +89,16 @@ export default function Cases() {
           console.warn("Failed to fetch recommended cases", err);
         });
     }
+    api
+      .get("/cases")
+      .then((res) => {
+        setCases(res.data.data.cases || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to fetch cases");
+        setLoading(false);
+      });
   }, []);
 
   // Fetch Cases with Filters
@@ -462,30 +464,6 @@ export default function Cases() {
             position: 'relative'
           }}
         >
-          Discover, review, and contribute to real-world medical cases. Dive
-          into interactive case studies and expand your clinical knowledge.
-        </Typography>
-        {canCreateCases && (
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{
-              mb: 2,
-              borderRadius: 3,
-              fontWeight: 700,
-              px: 4,
-              py: 1.2,
-              fontSize: "1.08rem",
-              boxShadow: "0 2px 8px #2193b044",
-              transition: "all 0.2s",
-              "&:hover": {
-                background: "#1565c0",
-                boxShadow: "0 4px 16px #2193b066",
-              },
-            }}
-            component={Link}
-            href="/cases/create"
-            disabled={userRole === 'patient'|| userRole === 'intern'}
           <IconButton
             aria-label="Close case discussion"
             onClick={() => setOpenDiscussionId(null)}
