@@ -50,6 +50,8 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate, profileIm
   localStorage.removeItem("starredPapers");
   localStorage.removeItem("pinnedPapers");
   localStorage.removeItem("refreshToken");
+  document.cookie = "token=; Path=/; Max-Age=0; SameSite=Lax";
+  document.cookie = "auth_status=; Path=/; Max-Age=0; SameSite=Lax";
   handleClose();
   onNavigate("/");
   };
