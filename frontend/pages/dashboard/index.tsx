@@ -48,70 +48,90 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const [data, setData] = useState<DashboardData | null>(null);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const userId = "dev-user-001";
+useEffect(() => {
+  const fetchDashboardData = async () => {
+    try {
+      // Check authentication
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('token')
+          : null;
 
-        let user = {
-          firstName: "Dev",
-          lastName: "User",
-          email: "dev.intern@medinternia.com",
-          password: "securePassword123",
-          userType: "patient",
-          medicalHistory: ["Hypertension Management"],
-          allergies: ["Penicillin"],
-          points: 580,
-          casesAnalyzed: 14,
-          streak: 6,
-          profileScore: 90,
-          certificatesEarned: 4
-        };
+      const userId =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('userId')
+          : null;
 
+      if (!token || !userId) {
+        router.replace('/auth/login');
+        return;
+      }
+
+      const userRes = await api.get(`/users/${userId}/profile`);
+      const user =
+        userRes.data?.data?.user ||
+        userRes.data?.user ||
+        userRes.data;
+
+      const optionalRequest = async <T,>(
+        request: Promise<{ data: T }>,
+        fallback: T
+      ) => {
         try {
-          const userRes = await api.get(`/users/${userId}/profile`);
-          user = userRes.data?.data?.user || userRes.data?.user || userRes.data || user;
-        } catch (e) {
-          console.log("Using decoupled medical workspace layout fallbacks.");
+          const response = await request;
+          return response.data;
+        } catch (err: any) {
+          if (err.response?.status === 401) throw err;
+          return fallback;
         }
+      };
 
-        const optionalRequest = async <T,>(request: Promise<{ data: T }>, fallback: T) => {
-          try {
-            const response = await request;
-            return response.data;
-          } catch (err: any) {
-            return fallback;
-          }
-        };
-
-        const [casesRes, webinarsRes, notificationsRes, badgesRes] = await Promise.all([
+      const [casesRes, webinarsRes, notificationsRes, badgesRes] =
+        await Promise.all([
           user.userType === 'doctor'
-            ? optionalRequest(api.get('/cases/my/cases?limit=5'), { data: { cases: [] } })
+            ? optionalRequest(api.get('/cases/my/cases?limit=5'), {
+                data: { cases: [] }
+              })
             : Promise.resolve({ data: { cases: [] } }),
-          optionalRequest(api.get('/webinars/my?type=registered'), { data: { webinars: [] } }),
-          optionalRequest(api.get('/notifications'), { notifications: [] }),
-          optionalRequest(api.get(`/badges/user/${userId}`), { data: { badges: [] } })
+          optionalRequest(api.get('/webinars/my?type=registered'), {
+            data: { webinars: [] }
+          }),
+          optionalRequest(api.get('/notifications'), {
+            notifications: []
+          }),
+          optionalRequest(api.get(`/badges/user/${userId}`), {
+            data: { badges: [] }
+          })
         ]);
 
-        const getList = (payload: any, key: string) => payload?.data?.[key] || payload?.[key] || [];
+      const getList = (payload: any, key: string) =>
+        payload?.data?.[key] || payload?.[key] || [];
 
-        setData({
-          user,
-          cases: getList(casesRes, 'cases'),
-          webinars: getList(webinarsRes, 'webinars'),
-          notifications: getList(notificationsRes, 'notifications').slice(0, 5),
-          badges: getList(badgesRes, 'badges')
-        });
-      } catch (err: any) {
-        console.error('Dashboard configuration load error:', err);
-        setError(err.response?.data?.message || 'Failed to populate platform widgets.');
-      } finally {
-        setLoading(false);
+      setData({
+        user,
+        cases: getList(casesRes, 'cases'),
+        webinars: getList(webinarsRes, 'webinars'),
+        notifications: getList(notificationsRes, 'notifications').slice(0, 5),
+        badges: getList(badgesRes, 'badges')
+      });
+    } catch (err: any) {
+      console.error('Dashboard fetch error:', err);
+
+      if (err.response?.status === 401) {
+        router.replace('/auth/login');
+      } else {
+        setError(
+          err.response?.data?.message ||
+            'Failed to load dashboard data'
+        );
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchDashboardData();
-  }, [router]);
+  fetchDashboardData();
+}, [router]);
 
   if (loading) {
     return (
