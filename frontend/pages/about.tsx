@@ -23,6 +23,7 @@ import {
   Target,
   Users,
 } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 /*
   Fonts: this design pairs "Manrope" (headings) with "Inter" (body copy).
@@ -89,9 +90,31 @@ function PulseLine({ color = TEAL, height = 64, animate = true }) {
     </Box>
   );
 }
+interface FloatIconProps {
+  Icon: LucideIcon;
+  size: number;
+  color: string;
+  bg: string;
+  top?: string | number;
+  left?: string | number;
+  right?: string | number;
+  bottom?: string | number;
+  delay?: number;
+  reduce?: boolean;
+}
 
-function FloatIcon({ Icon, size, color, bg, top, left, right, bottom, delay = 0, reduce }) {
-  return (
+function FloatIcon({
+  Icon,
+  size,
+  color,
+  bg,
+  top,
+  left,
+  right,
+  bottom,
+  delay = 0,
+  reduce,
+}: FloatIconProps) {  return (
     <Box
       component={motion.div}
       animate={reduce ? undefined : { y: [0, -10, 0] }}
@@ -315,9 +338,9 @@ export default function AboutPage() {
                     </Box>
                   </Box>
 
-                  <FloatIcon Icon={BookOpen} size={72} color={BLUE} bg="#ffffff" top="2%" left="0%" delay={0} reduce={reduce} />
-                  <FloatIcon Icon={Users} size={64} color={BLUE} bg="#ffffff" bottom="6%" left="4%" delay={0.6} reduce={reduce} />
-                  <FloatIcon Icon={BriefcaseMedical} size={68} color={BLUE} bg="#ffffff" bottom="0%" right="2%" delay={1.1} reduce={reduce} />
+                  <FloatIcon Icon={BookOpen} size={72} color={BLUE} bg="#ffffff" top="2%" left="0%" delay={0} reduce={reduce ?? undefined} />
+                  <FloatIcon Icon={Users} size={64} color={BLUE} bg="#ffffff" bottom="6%" left="4%" delay={0.6} reduce={reduce ?? undefined} />
+                  <FloatIcon Icon={BriefcaseMedical} size={68} color={BLUE} bg="#ffffff" bottom="0%" right="2%" delay={1.1} reduce={reduce ?? undefined} />
 
                   <Box
                     aria-hidden="true"
