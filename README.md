@@ -97,6 +97,7 @@ MedInternia is built for everyone in the medical ecosystem:
 * Attend and host webinars
 * Interactive live sessions
 
+
 ## 🤖 AI-Powered Suggestions
 
 * Smart recommendations for discussions
@@ -104,8 +105,10 @@ MedInternia is built for everyone in the medical ecosystem:
 
 ## 📹 Video Conferencing
 
-* Secure video calls
-* Webinar and discussion support
+- Secure video calls via [Daily.co](https://daily.co) (WebRTC)
+- Webinar and live AMA session support
+- Role-based controls (host can mute/remove participants)
+- **Status: Implementation in progress** — see [docs/video-conferencing.md](docs/video-conferencing.md)
 
 ## 👤 User Profiles
 
@@ -202,6 +205,11 @@ EMAIL_USER=your_email
 EMAIL_PASS=your_password
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
+
+# Video Conferencing (Daily.co — free tier)
+# Get API key at: https://dashboard.daily.co/developers
+DAILY_API_KEY=your_daily_co_api_key_here
+
 ```
 
 ---
