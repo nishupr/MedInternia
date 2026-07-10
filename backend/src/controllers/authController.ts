@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import User, { IUser } from '../models/User';
 import Otp from '../models/Otp';
@@ -14,7 +15,7 @@ import { AppError } from "../utils/AppError";
 const OTP_TTL_MS = 10 * 60 * 1000; // OTP valid for 10 minutes
 const OTP_MAX_ATTEMPTS = 5; // after 5 wrong tries the OTP is invalidated
 
-const generateOtpCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+const generateOtpCode = () => crypto.randomInt(100000, 1000000).toString();
 
 const issueOtp = async (email: string, purpose: 'signup' | 'reset') => {
   const otp = generateOtpCode();
