@@ -15,7 +15,8 @@ import {
   Backdrop,
   CircularProgress,
   Stack,
-  Grid
+  Grid,
+  Chip
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import api from "../../utils/api";
@@ -50,6 +51,8 @@ export default function CreateCase() {
     title: "",
     description: "",
     specialization: "",
+    tags: [] as string[],
+    symptoms: [] as string[],
   });
 
   const [images, setImages] = useState<string[]>([]);
@@ -97,6 +100,27 @@ export default function CreateCase() {
 
   const handleRemoveImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSuggestTags = async () => {
+    if (!form.description) {
+      setError("Please write a description first to generate tags.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await api.post("/symptoms/extract", { text: form.description });
+      if (res.data.success && res.data.data.symptoms) {
+        // Use the extracted symptoms as both symptoms and tags in the frontend UI
+        const extracted = res.data.data.symptoms;
+        setForm(prev => ({ ...prev, symptoms: extracted, tags: extracted }));
+        setSuccess("AI successfully extracted tags and symptoms!");
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to extract tags.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: any) => {
@@ -222,6 +246,38 @@ export default function CreateCase() {
                   maxRows={20}
                   InputProps={{ sx: { borderRadius: '10px', bgcolor: '#fdfdff' } }}
                 />
+              </Grid>
+
+              <Grid size={{ xs: 12 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={700} sx={{ color: "text.primary" }}>
+                    AI Generated Tags & Symptoms
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    startIcon={<Sparkles size={16} />}
+                    onClick={handleSuggestTags}
+                    disabled={loading || !form.description}
+                  >
+                    Auto-Suggest Tags
+                  </Button>
+                </Box>
+                {form.tags.length > 0 ? (
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', p: 2, bgcolor: '#fdfdff', borderRadius: '10px', border: '1px solid', borderColor: 'divider' }}>
+                    {form.tags.map(tag => (
+                      <Chip key={tag} label={tag} color="primary" variant="outlined" onDelete={() => {
+                        const newTags = form.tags.filter(t => t !== tag);
+                        setForm(prev => ({ ...prev, tags: newTags, symptoms: newTags }));
+                      }} />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    Click "Auto-Suggest Tags" to extract keywords from your description before submitting.
+                  </Typography>
+                )}
               </Grid>
 
               <Grid size={{ xs: 12 }}>
