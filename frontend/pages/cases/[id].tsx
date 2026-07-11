@@ -26,6 +26,7 @@ import { MessageCircleReply, Pin, CheckCircle2, Sparkles } from 'lucide-react';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
+import BookmarkButton from '../../components/BookmarkButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -450,7 +451,11 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
               <Typography variant="h3" fontWeight={900} color="text.primary" sx={{ flex: 1, letterSpacing: -0.5, mb: 0 }}>
                 {caseData.title}
               </Typography>
-              <PdfExportButton caseData={caseData} discussions={allDiscussions} />
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <BookmarkButton itemType="case" itemId={caseData._id || id as string} />
+                <OfflineSaveButton caseId={caseData._id || id as string} caseData={caseData} />
+                <PdfExportButton caseData={caseData} discussions={allDiscussions} />
+              </Box>
             </Box>
 
             {/* AI Prominent Badges */}
