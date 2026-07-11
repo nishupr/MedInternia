@@ -434,6 +434,7 @@ export const createCase = asyncHandler(
       images,
       attachments,
       specialization,
+      isRareDisease,
     } = req.body;
 
     const spec = specialization || user.specialization || "General Medicine";
@@ -446,17 +447,18 @@ export const createCase = asyncHandler(
       const newCase = new Case({
         title,
         description,
-        symptoms: aiAnalysis.symptoms,
+        symptoms: req.body.symptoms?.length ? req.body.symptoms : aiAnalysis.symptoms,
         patientInfo: patientInfo || {},
         diagnosis: aiAnalysis.diagnosis,
         treatment: aiAnalysis.treatment,
         images: images || [],
         attachments: attachments || [],
-        tags: aiAnalysis.tags,
+        tags: req.body.tags?.length ? req.body.tags : aiAnalysis.tags,
         difficulty: aiAnalysis.difficulty,
         specialization: aiAnalysis.specialty || spec,
         doctor: user._id as any,
         isPatientCase: true,
+        isRareDisease: isRareDisease === true,
         moderationStatus: "pending",
         moderationAuditTrail: [
           {
@@ -490,17 +492,18 @@ export const createCase = asyncHandler(
     const newCase = new Case({
       title,
       description,
-      symptoms: aiAnalysis.symptoms,
+      symptoms: req.body.symptoms?.length ? req.body.symptoms : aiAnalysis.symptoms,
       patientInfo: patientInfo || {},
       diagnosis: aiAnalysis.diagnosis,
       treatment: aiAnalysis.treatment,
       images: images || [],
       attachments: attachments || [],
-      tags: aiAnalysis.tags,
+      tags: req.body.tags?.length ? req.body.tags : aiAnalysis.tags,
       difficulty: aiAnalysis.difficulty,
       specialization: aiAnalysis.specialty || spec,
       doctor: user._id as any,
       isPatientCase: false,
+      isRareDisease: isRareDisease === true,
       moderationStatus: "approved",
       moderationAuditTrail: [
         {
@@ -540,6 +543,7 @@ export const getCases = asyncHandler(
       difficulty,
       tags,
       doctor,
+      isRareDisease,
       page = 1,
       limit = 10,
       search,
@@ -554,6 +558,12 @@ export const getCases = asyncHandler(
 
     if (difficulty) {
       filter.difficulty = difficulty;
+    }
+
+    if (isRareDisease === "true") {
+      filter.isRareDisease = true;
+    } else if (isRareDisease === "false") {
+      filter.isRareDisease = false;
     }
 
     if (tags) {
