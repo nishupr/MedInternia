@@ -2,7 +2,12 @@ import axios from 'axios';
 import { getGlobalToken, setGlobalToken } from '../context/AuthContext';
 
 // Maintain backward compatibility for files importing getAuthToken
-export const getAuthToken = (): string | null => getGlobalToken();
+export const getAuthToken = (): string | null => {
+  const globalToken = getGlobalToken();
+  if (globalToken) return globalToken;
+  if (typeof window !== 'undefined') return localStorage.getItem('token');
+  return null;
+};
 
 const ensureApiPath = (baseUrl: string): string => {
   const normalized = baseUrl.replace(/\/+$/, '');

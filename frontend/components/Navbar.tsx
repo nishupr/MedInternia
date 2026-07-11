@@ -153,7 +153,14 @@ export default function Navbar({ route }: { route?: string }) {
   const [firstName, setFirstName] = React.useState<string>('');
   const [lastName, setLastName] = React.useState<string>('');
   const [userType, setUserType] = React.useState<string>('');
-  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      return !!(token && userId);
+    }
+    return false;
+  });
 
   React.useEffect(() => {
     const token = getAuthToken();
@@ -164,13 +171,26 @@ export default function Navbar({ route }: { route?: string }) {
     }
     setIsLoggedIn(true);
 
+    try {
+      const storedUserStr = localStorage.getItem('user');
+      if (storedUserStr) {
+        const storedUser = JSON.parse(storedUserStr);
+        setProfileImageUrl(storedUser.profilePicture || undefined);
+        setFirstName(storedUser.firstName || storedUser.name || '');
+        setLastName(storedUser.lastName || '');
+        setUserType(storedUser.userType || storedUser.role || '');
+      }
+    } catch (e) {
+      console.error("Failed to parse user from localStorage", e);
+    }
+
     import('../utils/api').then((apiModule) => {
       apiModule.default
         .get(`/users/${userId}/profile`)
         .then((res) => {
           const userData = res.data?.data?.user || res.data?.user || res.data;
           setProfileImageUrl(userData.profilePicture || undefined);
-          setFirstName(userData.firstName || '');
+          setFirstName(userData.firstName || userData.name || '');
           setLastName(userData.lastName || '');
           setUserType(userData.userType || '');
         })
