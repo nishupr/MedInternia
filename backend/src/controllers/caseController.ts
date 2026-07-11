@@ -398,6 +398,7 @@ export const createCase = asyncHandler(
       patientInfo,
       images,
       specialization,
+      isRareDisease,
     } = req.body;
 
     const spec = specialization || user.specialization || "General Medicine";
@@ -420,6 +421,7 @@ export const createCase = asyncHandler(
         specialization: aiAnalysis.specialty || spec,
         doctor: user._id as any,
         isPatientCase: true,
+        isRareDisease: isRareDisease === true,
         moderationStatus: "pending",
         moderationAuditTrail: [
           {
@@ -463,6 +465,7 @@ export const createCase = asyncHandler(
       specialization: aiAnalysis.specialty || spec,
       doctor: user._id as any,
       isPatientCase: false,
+      isRareDisease: isRareDisease === true,
       moderationStatus: "approved",
       moderationAuditTrail: [
         {
@@ -502,6 +505,7 @@ export const getCases = asyncHandler(
       difficulty,
       tags,
       doctor,
+      isRareDisease,
       page = 1,
       limit = 10,
       search,
@@ -516,6 +520,12 @@ export const getCases = asyncHandler(
 
     if (difficulty) {
       filter.difficulty = difficulty;
+    }
+
+    if (isRareDisease === "true") {
+      filter.isRareDisease = true;
+    } else if (isRareDisease === "false") {
+      filter.isRareDisease = false;
     }
 
     if (tags) {

@@ -16,7 +16,9 @@ import {
   CircularProgress,
   Stack,
   Grid,
-  Chip
+  Chip,
+  Switch,
+  FormControlLabel
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import api from "../../utils/api";
@@ -53,6 +55,7 @@ export default function CreateCase() {
     specialization: "",
     tags: [] as string[],
     symptoms: [] as string[],
+    isRareDisease: false,
   });
 
   const [images, setImages] = useState<string[]>([]);
@@ -77,7 +80,8 @@ export default function CreateCase() {
   }, [loading]);
 
   const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setForm({ ...form, [e.target.name]: value });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,6 +232,25 @@ export default function CreateCase() {
                     </MenuItem>
                   ))}
                 </TextField>
+              </Grid>
+
+              <Grid size={{ xs: 12 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.isRareDisease}
+                      onChange={handleChange}
+                      name="isRareDisease"
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body1" fontWeight={600} color="text.primary">
+                      Mark as Rare/Orphan Disease (helps specialists discover unique cases)
+                    </Typography>
+                  }
+                  sx={{ mb: 2 }}
+                />
               </Grid>
 
               <Grid size={{ xs: 12 }}>
