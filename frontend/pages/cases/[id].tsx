@@ -31,6 +31,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
 import PdfExportButton from '../../components/PdfExportButton';
+import OfflineSaveButton from '../../components/OfflineSaveButton';
 import ClinicalTimeline from '../../components/ClinicalTimeline';
 
 export default function CaseDiscussion({ id: propId, modalMode, hideDescription }: { id?: string, modalMode?: boolean, hideDescription?: boolean }) {
@@ -450,7 +451,10 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
               <Typography variant="h3" fontWeight={900} color="text.primary" sx={{ flex: 1, letterSpacing: -0.5, mb: 0 }}>
                 {caseData.title}
               </Typography>
-              <PdfExportButton caseData={caseData} discussions={allDiscussions} />
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <OfflineSaveButton caseId={caseData._id || id as string} caseData={caseData} />
+                <PdfExportButton caseData={caseData} discussions={allDiscussions} />
+              </Box>
             </Box>
 
             {/* AI Prominent Badges */}
