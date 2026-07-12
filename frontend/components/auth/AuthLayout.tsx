@@ -69,8 +69,8 @@ export default function AuthLayout({ title, subtitle, children, wide = false }: 
             <Image
               src="/med-internia-logo.jpg"
               alt="MedInternia logo"
-              width={48}
-              height={48}
+              width={60}
+              height={60}
               style={{ borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)' }}
             />
             <Typography variant="h5" fontWeight={800} color="#fff" letterSpacing={0.5}>
@@ -140,9 +140,10 @@ export default function AuthLayout({ title, subtitle, children, wide = false }: 
             <Image
               src="/med-internia-logo.jpg"
               alt="MedInternia logo"
-              width={36}
-              height={36}
-              style={{ borderRadius: '50%' }}
+              width={48}
+              height={48}
+              style={{ borderRadius: '50%' 
+              }}
             />
             <Typography variant="h6" fontWeight={800} color="primary.main">
               MedInternia
