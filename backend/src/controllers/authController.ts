@@ -129,7 +129,21 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     emergencyContact,
     medicalHistory,
     allergies,
+    verificationToken,
   } = req.body;
+
+  if (!verificationToken) {
+    throw new AppError('Email verification token is required', 400);
+  }
+
+  try {
+    const decoded = jwt.verify(verificationToken, process.env.JWT_SECRET as string) as any;
+    if (decoded.email !== email || decoded.purpose !== 'signup') {
+      throw new AppError('Invalid email verification token', 400);
+    }
+  } catch (err) {
+    throw new AppError('Email verification token is invalid or expired', 400);
+  }
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
@@ -173,6 +187,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
     gender,
     address,
+    isVerified: true,
   };
 
   // Add doctor-specific fields
@@ -259,12 +274,18 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   if (!email || !otp) {
     throw new AppError('Email and OTP required', 400);
   }
+    const result = await consumeOtp(email, 'signup', otp);
+    if (!result.valid) {
+      throw new AppError(result.message || 'Invalid OTP', 400);
+    }
 
-  const result = await consumeOtp(email, 'signup', otp);
-  if (!result.valid) {
-    throw new AppError(result.message || 'Invalid OTP', 400);
-  }
-  res.json({ success: true });
+    const verificationToken = jwt.sign(
+      { email, purpose: 'signup' },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '30m' }
+    );
+
+    res.json({ success: true, verificationToken });
 });
 
 // Login user
