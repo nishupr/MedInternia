@@ -26,7 +26,7 @@ export default function WebinarTranscriptDemo() {
       <Navbar />
       
       {/* Header */}
-      <Box sx={{ bgcolor: '#1e293b', color: 'white', pt: 6, pb: 4, mb: 4 }}>
+      <Box sx={{ bgcolor: '#1e293b', color: 'white', pt: 12, pb: 4, mb: 4 }}>
         <Box sx={{ maxWidth: 1400, mx: 'auto', px: 3 }}>
           <Chip label="Recorded Webinar" color="primary" size="small" sx={{ mb: 2, fontWeight: 700 }} />
           <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
@@ -61,7 +61,7 @@ export default function WebinarTranscriptDemo() {
             
             <Box sx={{ mt: 4 }}>
               <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>Webinar Description</Typography>
-              <Typography variant="body1" color="text.secondary" lineHeight={1.8}>
+              <Typography variant="body1" color="#334155" lineHeight={1.8}>
                 This session covers the latest clinical guidelines for managing acute decompensated heart failure, 
                 focusing on diuretic resistance, sequential nephron blockade, and the timing of vasodilator therapy.
               </Typography>
