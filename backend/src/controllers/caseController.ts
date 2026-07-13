@@ -1117,7 +1117,11 @@ export const toggleStar = asyncHandler(
       throw new AppError("Case not found", 404);
     }
 
-    const userId = user._id.toString();
+   const userId = user._id?.toString();
+
+if (!userId) {
+  throw new AppError("User not authenticated", 401);
+}
 
     const index = caseData.starredBy.findIndex(
       (u) => u.toString() === userId
