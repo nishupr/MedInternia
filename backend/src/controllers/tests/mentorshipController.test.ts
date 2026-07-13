@@ -1,5 +1,12 @@
 import { Response } from "express";
-import { requestMentorship, updateMentorshipStatus } from "../mentorshipController";
+import {
+  requestMentorship,
+  updateMentorshipStatus,
+  getMentorshipById,
+  addGoal,
+  toggleGoal,
+  addMeeting
+} from "../mentorshipController";
 import Mentorship from "../../models/Mentorship";
 import User from "../../models/User";
 
@@ -124,6 +131,138 @@ describe("Mentorship Controller", () => {
       mockedMentorship.findById.mockResolvedValue(null);
 
       await updateMentorshipStatus(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Mentorship not found' }));
+    });
+  });
+
+  describe("getMentorshipById", () => {
+    it("returns 200 and mentorship document if found and authorized", async () => {
+      const req = mockRequest("doctor-1", "doctor", {}, { id: "mentorship-1" });
+      const res = mockResponse();
+
+      const populate2 = jest.fn().mockResolvedValue({
+        _id: "mentorship-1",
+        mentor: { _id: "doctor-1" },
+        mentee: { _id: "intern-1" },
+      });
+      const populate1 = jest.fn().mockReturnValue({ populate: populate2 });
+      mockedMentorship.findById.mockReturnValue({ populate: populate1 } as any);
+
+      await getMentorshipById(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it("returns 404 if mentorship not found", async () => {
+      const req = mockRequest("doctor-1", "doctor", {}, { id: "non-existent" });
+      const res = mockResponse();
+
+      const populate2 = jest.fn().mockResolvedValue(null);
+      const populate1 = jest.fn().mockReturnValue({ populate: populate2 });
+      mockedMentorship.findById.mockReturnValue({ populate: populate1 } as any);
+
+      await getMentorshipById(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Mentorship not found' }));
+    });
+  });
+
+  describe("addGoal", () => {
+    it("adds goal successfully if mentorship exists", async () => {
+      const req = mockRequest("intern-1", "intern", { title: "Study ECG", description: "Learn 12-lead ECG" }, { id: "mentorship-1" });
+      const res = mockResponse();
+
+      const mockSave = jest.fn();
+      mockedMentorship.findById.mockResolvedValue({
+        _id: "mentorship-1",
+        goals: [],
+        save: mockSave,
+      } as any);
+
+      await addGoal(req as any, res as any);
+
+      expect(mockSave).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it("returns 404 if mentorship is not found", async () => {
+      const req = mockRequest("intern-1", "intern", { title: "Study ECG" }, { id: "non-existent" });
+      const res = mockResponse();
+
+      mockedMentorship.findById.mockResolvedValue(null);
+
+      await addGoal(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Mentorship not found' }));
+    });
+  });
+
+  describe("toggleGoal", () => {
+    it("toggles goal completion successfully if mentorship and goal exist", async () => {
+      const req = mockRequest("intern-1", "intern", {}, { id: "mentorship-1", goalId: "goal-1" });
+      const res = mockResponse();
+
+      const mockSave = jest.fn();
+      const mockGoal = { _id: "goal-1", isCompleted: false };
+      mockedMentorship.findById.mockResolvedValue({
+        _id: "mentorship-1",
+        goals: [mockGoal],
+        save: mockSave,
+      } as any);
+
+      await toggleGoal(req as any, res as any);
+
+      expect(mockGoal.isCompleted).toBe(true);
+      expect(mockSave).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it("returns 404 if mentorship is not found", async () => {
+      const req = mockRequest("intern-1", "intern", {}, { id: "non-existent", goalId: "goal-1" });
+      const res = mockResponse();
+
+      mockedMentorship.findById.mockResolvedValue(null);
+
+      await toggleGoal(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Mentorship not found' }));
+    });
+  });
+
+  describe("addMeeting", () => {
+    it("adds meeting successfully if mentorship exists", async () => {
+      const req = mockRequest("doctor-1", "doctor", { scheduledAt: "2026-07-13T22:00:00Z", topic: "Clinical audit", link: "zoom.us", notes: "preparation" }, { id: "mentorship-1" });
+      const res = mockResponse();
+
+      const mockSave = jest.fn();
+      mockedMentorship.findById.mockResolvedValue({
+        _id: "mentorship-1",
+        meetings: [],
+        save: mockSave,
+      } as any);
+
+      await addMeeting(req as any, res as any);
+
+      expect(mockSave).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it("returns 404 if mentorship is not found", async () => {
+      const req = mockRequest("doctor-1", "doctor", { scheduledAt: "2026-07-13T22:00:00Z" }, { id: "non-existent" });
+      const res = mockResponse();
+
+      mockedMentorship.findById.mockResolvedValue(null);
+
+      await addMeeting(req as any, res as any);
 
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Mentorship not found' }));
