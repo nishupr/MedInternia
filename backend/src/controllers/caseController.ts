@@ -629,7 +629,18 @@ export const getCases = asyncHandler(
     const user = req.user as any;
     const isVerifiedDoctor = user && (user.isVerifiedDoctor || user.userType === "admin");
 
-    const filter: any = { isActive: true, $and: [publicCaseFilter] };
+    const filter: any = {
+      isActive: true,
+      $and: [
+        {
+          $or: [
+            publicCaseFilter,
+            { doctor: user?._id },
+            { collaborators: user?._id },
+          ],
+        },
+      ],
+    };
 
     // Apply RBAC for verified doctors only cases
     if (!isVerifiedDoctor) {
