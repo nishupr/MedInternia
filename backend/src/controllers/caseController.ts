@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 import { createAndEmitNotification } from "./notificationController";
 import { Response } from "express";
@@ -14,6 +15,10 @@ import {
 import { analyzeCase } from "../services/aiTaggerService";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
+
+import { extractEntities } from "../services/nerService";
+import { extractSymptoms } from "../services/symptomExtractionService";
+
 import { uploadCaseAttachment } from "../utils/cloudinary";
 
 const canModerateComments = (userType?: string) =>
@@ -202,7 +207,7 @@ export const replyToComment = asyncHandler(
           c.author.toString() === user._id.toString() &&
           c.content === content.trim() &&
           c.replyTo?.toString() ===
-            (parentComment._id as string | { toString(): string }).toString(),
+          (parentComment._id as string | { toString(): string }).toString(),
       )
     ) {
       throw new AppError("Duplicate reply detected", 409);
@@ -317,6 +322,8 @@ export const rateComment = asyncHandler(
       commentId: commentIdObj,
     });
 
+
+
     let rated = false;
     if (existingRating) {
       // Unrate: remove the Rating document and denormalized reference
@@ -341,10 +348,12 @@ export const rateComment = asyncHandler(
         }
         throw err;
       }
+
       await Case.updateOne(
         { _id: caseId, "comments._id": commentId },
         { $addToSet: { "comments.$.ratedBy": userIdObj } },
       );
+
       rated = true;
     }
 
@@ -387,7 +396,7 @@ export const uploadAttachment = asyncHandler(
     }
 
     const uploadResult = await uploadCaseAttachment(req.file, String(req.user._id));
-    
+
     // Determine attachment type from resource_type or mimetype
     let type = 'image';
     if (uploadResult.resource_type === 'video') {
@@ -436,7 +445,30 @@ export const createCase = asyncHandler(
       specialization,
       isRareDisease,
       verifiedDoctorsOnly,
+      tags,
+      difficulty,
     } = req.body;
+    let entities;
+
+    try {
+      entities = await extractEntities(description);
+    }
+    catch (error) {
+      console.error("NER service failed:", error);
+
+      const symptoms = extractSymptoms(description);
+
+      entities = {
+        entities: symptoms.map((symptom) => ({
+          text: symptom,
+          label: "SYMPTOM",
+          score: 1,
+          start: 0,
+          end: 0,
+        })),
+      };
+    }
+
 
     const spec = specialization || user.specialization || "General Medicine";
 
@@ -445,6 +477,10 @@ export const createCase = asyncHandler(
 
     // Restrict patient case creation
     if (user.userType === "patient") {
+
+
+      // Patients can't set diagnosis, treatment, or difficulty
+      // These will be limited or undefined
       const newCase = new Case({
         title,
         description,
@@ -454,9 +490,12 @@ export const createCase = asyncHandler(
         treatment: aiAnalysis.treatment,
         images: images || [],
         attachments: attachments || [],
-        tags: req.body.tags?.length ? req.body.tags : aiAnalysis.tags,
-        difficulty: aiAnalysis.difficulty,
-        specialization: aiAnalysis.specialty || spec,
+
+        tags: tags || [],
+        entities: entities.entities,
+        difficulty: "beginner", // Default for patient cases
+        specialization: "General Medicine", // Default for patients
+
         doctor: user._id as any,
         isPatientCase: true,
         isRareDisease: isRareDisease === true,
@@ -470,6 +509,7 @@ export const createCase = asyncHandler(
           },
         ],
       });
+
 
       await newCase.save();
       await newCase.populate("doctor", "firstName lastName");
@@ -492,6 +532,7 @@ export const createCase = asyncHandler(
 
     // Doctor case creation (full features)
     const newCase = new Case({
+
       title,
       description,
       symptoms: req.body.symptoms?.length ? req.body.symptoms : aiAnalysis.symptoms,
@@ -499,10 +540,14 @@ export const createCase = asyncHandler(
       diagnosis: aiAnalysis.diagnosis,
       treatment: aiAnalysis.treatment,
       images: images || [],
+
+      tags: tags || [],
+      entities: entities.entities,
+      difficulty,
+      specialization: specialization || user.specialization,
+
+
       attachments: attachments || [],
-      tags: req.body.tags?.length ? req.body.tags : aiAnalysis.tags,
-      difficulty: aiAnalysis.difficulty,
-      specialization: aiAnalysis.specialty || spec,
       doctor: user._id as any,
       isPatientCase: false,
       isRareDisease: isRareDisease === true,
@@ -687,17 +732,17 @@ export const getCaseById = asyncHandler(
       throw new AppError("Case is no longer available", 404);
     }
     const user = req.user as { _id?: string; userType?: string; isVerifiedDoctor?: boolean } | undefined;
-    
+
     // RBAC check for restricted cases
     if (caseData.verifiedDoctorsOnly) {
       const isVerifiedDoctor = user && (user.isVerifiedDoctor || user.userType === "admin");
       const isOwner = user?._id && caseData.doctor._id.toString() === user._id.toString();
-      
+
       if (!isVerifiedDoctor && !isOwner) {
         throw new AppError("Access Denied: This case is restricted to Verified Doctors only", 403);
       }
     }
-    
+
     const isOwner =
       user?._id && (caseData.doctor._id ? caseData.doctor._id.toString() : caseData.doctor.toString()) === user._id.toString();
     const isApproved =
@@ -743,6 +788,14 @@ export const updateCase = asyncHandler(
     }
 
     const updates = req.body;
+    if (updates.description) {
+      try {
+        const result = await extractEntities(updates.description);
+        updates.entities = result.entities;
+      } catch (error) {
+        console.error("NER service failed:", error);
+      }
+    }
     delete updates.doctor; // Prevent changing the doctor
     delete updates.comments; // Comments are handled separately
     delete updates.likes; // Likes are handled separately
@@ -1431,7 +1484,7 @@ export const solveCase = asyncHandler(
     // Update user history
     userDoc.solvedCases = [...solvedList, caseData._id as any];
     userDoc.casesAnalyzed = (userDoc.casesAnalyzed || 0) + 1;
-    
+
     // Award 5 points for solving
     const pointsAwarded = 5;
     userDoc.points = (userDoc.points || 0) + pointsAwarded;

@@ -23,9 +23,11 @@ import {
   Tab
 } from '@mui/material';
 import { MessageCircleReply, Pin, CheckCircle2, Sparkles, BookmarkPlus, Lock } from 'lucide-react';
+import SchoolIcon from '@mui/icons-material/School';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
+import BookmarkButton from '../../components/BookmarkButton';
 import GlossaryText from '../../components/GlossaryText';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Link from 'next/link';
@@ -486,6 +488,7 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                 {caseData.title}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
+                <BookmarkButton itemType="case" itemId={caseData._id || id as string} />
                 <Button 
                   variant="outlined" 
                   size="small" 
@@ -497,6 +500,32 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                 </Button>
                 <OfflineSaveButton caseId={caseData._id || id as string} caseData={caseData} />
                 <PdfExportButton caseData={caseData} discussions={allDiscussions} />
+                <Tooltip title="Create Flashcard from this case">
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SchoolIcon />}
+                    onClick={async () => {
+                      try {
+                        const token = localStorage.getItem('token');
+                        await api.post('/flashcards', {
+                          question: caseData.title,
+                          answer: caseData.specialization
+                            ? `Specialty: ${caseData.specialization}. ${(caseData.description || '').slice(0, 150)}`
+                            : (caseData.description || '').slice(0, 200),
+                          tags: caseData.tags || [],
+                          caseId: caseData._id
+                        }, { headers: { Authorization: `Bearer ${token}` } });
+                        setSuccess('Flashcard created! View it in your deck.');
+                      } catch {
+                        setError('Failed to create flashcard');
+                      }
+                    }}
+                    sx={{ borderRadius: 2, fontWeight: 600, textTransform: 'none' }}
+                  >
+                    Flashcard
+                  </Button>
+                </Tooltip>
               </Box>
             </Box>
 
@@ -585,15 +614,39 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                     ml: 'auto',
                     borderRadius: '10px',
                     fontWeight: 700,
-                    bgcolor: '#10b981',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                    textTransform: 'none',
+                    px: 3,
+                    boxShadow: '0 4px 14px 0 rgba(34,197,94,0.39)',
                     '&:hover': {
-                      bgcolor: '#059669',
-                      boxShadow: '0 6px 16px rgba(16, 185, 129, 0.35)',
+                      boxShadow: '0 6px 20px rgba(34,197,94,0.4)',
                     }
                   }}
                 >
                   Mark as Solved
+                </Button>
+              )}
+
+              {/* Virtual Consult Room Button */}
+              {userId && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => router.push(`/cases/${id}/consult`)}
+                  sx={{
+                    ml: isSolved ? 'auto' : 1,
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    px: 3,
+                    bgcolor: '#4f46e5',
+                    boxShadow: '0 4px 14px 0 rgba(79,70,229,0.39)',
+                    '&:hover': {
+                      bgcolor: '#4338ca',
+                      boxShadow: '0 6px 20px rgba(79,70,229,0.4)',
+                    }
+                  }}
+                >
+                  Open Consult Room
                 </Button>
               )}
             </Stack>
