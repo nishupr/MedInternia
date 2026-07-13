@@ -63,7 +63,7 @@ useEffect(() => {
           : null;
 
       if (!token || !userId) {
-        router.replace('/auth/login');
+        window.location.href = '/auth/login?clear=1';
         return;
       }
 
@@ -118,7 +118,7 @@ useEffect(() => {
       console.error('Dashboard fetch error:', err);
 
       if (err.response?.status === 401) {
-        router.replace('/auth/login');
+        window.location.href = '/auth/login?clear=1';
       } else {
         setError(
           err.response?.data?.message ||
