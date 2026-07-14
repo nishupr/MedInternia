@@ -228,23 +228,29 @@ export default function Jobs() {
     localStorage.setItem('savedJobs', JSON.stringify(updated));
   };
 
-  const handleApply = (job: any) => {
+  const handleApply = async (job: any) => {
     // Add to applications list in localstorage
     const exists = applications.find(app => app.id === job._id);
     if (exists) return;
 
-    const newApp: JobApplication = {
-      id: job._id,
-      title: job.title,
-      company: job.company || 'MedInternia Hospital Group',
-      location: job.location,
-      status: 'Applied',
-      appliedDate: new Date().toLocaleDateString()
-    };
+    try {
+      await api.post(`/jobs/${job._id}/apply`);
 
-    const updated = [newApp, ...applications];
-    setApplications(updated);
-    localStorage.setItem('jobApplications', JSON.stringify(updated));
+      const newApp: JobApplication = {
+        id: job._id,
+        title: job.title,
+        company: job.company || 'MedInternia Hospital Group',
+        location: job.location,
+        status: 'Applied',
+        appliedDate: new Date().toLocaleDateString()
+      };
+
+      const updated = [newApp, ...applications];
+      setApplications(updated);
+      localStorage.setItem('jobApplications', JSON.stringify(updated));
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to apply for this job');
+    }
   };
 
   const isPatient = userType === "patient";
