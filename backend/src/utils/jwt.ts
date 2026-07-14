@@ -63,7 +63,9 @@ export const verifyToken = (token: string): JwtPayload | null => {
   }
 
   try {
-    const decoded = jwt.verify(token, secret) as JwtPayload;
+    const decoded = jwt.verify(token, secret, {
+      ignoreExpiration: false,
+    }) as JwtPayload;
     return decoded;
   } catch (error) {
     return null;
@@ -76,7 +78,9 @@ export const verifyRefreshToken = (token: string): JwtPayload | null => {
     throw new Error('JWT_REFRESH_SECRET is not defined in environment variables');
   }
   try {
-    const decoded = jwt.verify(token, secret) as JwtPayload;
+    const decoded = jwt.verify(token, secret, {
+      ignoreExpiration: false,
+    }) as JwtPayload;
     return decoded;
   } catch (error) {
     return null;
