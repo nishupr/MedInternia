@@ -264,7 +264,8 @@ export const sendOtp = async (req: Request, res: Response) => {
     });
     return res.json({ success: true });
   } catch (err) {
-    console.error('Send OTP email error:', err);
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Send OTP email error:', errorMsg);
     return res.status(500).json({ success: false, message: 'Failed to send OTP' });
   }
 };
