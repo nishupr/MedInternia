@@ -115,6 +115,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     dateOfBirth,
     gender,
     address,
+    otp, // Added OTP field verification into the payload
     // Doctor specific
     specialization,
     licenseNumber,
@@ -131,13 +132,24 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     allergies,
   } = req.body;
 
-  // Check if user already exists
+  // 1. Verify that the OTP was provided
+  if (!otp) {
+    throw new AppError("OTP validation is required to register", 400);
+  }
+
+  // 2. Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new AppError("User with this email already exists", 400);
   }
 
-  // Validate required fields based on user type
+  // 3. Verify OTP code against the database record
+  const otpCheck = await consumeOtp(email, 'signup', otp);
+  if (!otpCheck.valid) {
+    throw new AppError(otpCheck.message || "Invalid or expired OTP", 400);
+  }
+
+  // 4. Validate required fields based on user type
   if (userType === "doctor") {
     if (!specialization || !licenseNumber) {
       throw new AppError(
@@ -198,8 +210,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     userData.allergies = allergies;
   }
 
-  // Create new user
-  const user = new User(userData);
+  // Create new user — email ownership was already proven via OTP above,
+  // so mark the account as verified immediately.
+  const user = new User({ ...userData, isVerified: true });
   await user.save();
 
   // Generate JWT tokens
@@ -236,9 +249,13 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const sendOtp = async (req: Request, res: Response) => {
+// Send registration validation OTP
+export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+  if (!email) {
+    throw new AppError('Email required', 400);
+  }
+  
   const otp = await issueOtp(email, 'signup');
   try {
     await transporter.sendMail({
@@ -247,13 +264,14 @@ export const sendOtp = async (req: Request, res: Response) => {
       subject: 'MedInternia Email Verification OTP',
       text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
     });
-    return res.json({ success: true });
+    res.json({ success: true, message: 'OTP sent successfully!' });
   } catch (err) {
     console.error('Send OTP email error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    throw new AppError('Failed to send OTP email setup error', 500);
   }
-};
+});
 
+// Verify OTP directly if frontend uses isolated checkpoints
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
@@ -466,17 +484,14 @@ export const forgotPassword = asyncHandler(
     }
     const user = await User.findOne({ email });
 
-if (!user) {
-    return res.json({
+    if (!user) {
+      return res.json({
         success: true,
-        message:
-            "If an account exists with this email, an OTP has been sent."
-    });
-}
+        message: "If an account exists with this email, an OTP has been sent."
+      });
+    }
     // Generate OTP
     const otp = await issueOtp(email, 'reset');
-
-    
 
     try {
       await transporter.sendMail({
