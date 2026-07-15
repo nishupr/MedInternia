@@ -142,5 +142,5 @@ Protected auth routes currently include:
 
 ## Notes
 
-- The documented and actively used user model currently centers on patient, doctor, intern, and admin accounts.
+- The documented and actively used user model currently centers on patient, doctor, and intern accounts.
 - Some parts of the codebase are still under active development, so avoid describing this guide as production-ready.

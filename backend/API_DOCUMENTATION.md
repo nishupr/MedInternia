@@ -1,7 +1,7 @@
 # Healthcare API Documentation
 
 ## Overview
-MedInternia provides a healthcare and medical learning API for patients, interns, doctors, and admins.
+MedInternia provides a healthcare and medical learning API for patients, interns, and doctors.
 
 The backend currently supports:
 - JWT-based authentication
@@ -28,9 +28,7 @@ For browser clients, the frontend stores the token in localStorage and also rece
 - `patient`: Can manage their profile, cases, and personal medical information
 - `doctor`: Can create and moderate cases, review content, and manage professional profile data
 - `intern`: Can participate in learning workflows, discussions, and case reviews
-- `admin`: Has elevated access for moderation and user management
-
-> Note: The codebase contains placeholder permission entries for additional roles, but the documented and actively used user model currently centers on patient, doctor, intern, and admin accounts.
+> Note: The codebase contains placeholder permission entries for additional roles, but the documented and actively used user model currently centers on patient, doctor, and intern accounts.
 
 ## API Endpoints
 
@@ -184,7 +182,7 @@ NODE_ENV=development
 - `lastName`: required, max 50 characters
 - `email`: required, unique, valid email format
 - `password`: required
-- `userType`: required, one of `patient`, `doctor`, `intern`, `admin`
+- `userType`: required, one of `patient`, `doctor`, `intern`
 
 ### Optional Fields for All Users
 - `phone`
