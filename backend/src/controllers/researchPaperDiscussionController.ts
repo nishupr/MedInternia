@@ -86,17 +86,29 @@ export const likeComment = asyncHandler(async (req: AuthRequest, res: Response) 
     { $pull: { 'comments.$.likes': userIdObj } },
   );
 
+  if (pullResult.matchedCount === 0) {
+    const paperExists = await ResearchPaper.exists({ _id: paperId });
+    throw new AppError(paperExists ? 'Comment not found' : 'Research paper not found', 404);
+  }
+
   if (pullResult.modifiedCount === 0) {
-    await ResearchPaper.updateOne(
+    const addResult = await ResearchPaper.updateOne(
       { _id: paperId, 'comments._id': commentId },
       { $addToSet: { 'comments.$.likes': userIdObj } },
     );
+    if (addResult.matchedCount === 0) {
+      throw new AppError('Comment not found', 404);
+    }
     liked = true;
   }
 
   const updated = await ResearchPaper.findById(paperId, {
     comments: { $elemMatch: { _id: commentId } },
   });
+  if (!updated || !updated.comments.length) {
+    throw new AppError('Comment not found', 404);
+  }
+
   const likes = ((updated?.comments as any)?.[0]?.likes as any[])?.length ?? 0;
 
   res.json({ success: true, message: liked ? 'Comment liked' : 'Comment unliked', data: { likes, liked } });
