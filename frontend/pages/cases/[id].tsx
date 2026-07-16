@@ -22,16 +22,21 @@ import {
   Tabs,
   Tab
 } from '@mui/material';
-import { MessageCircleReply, Pin, CheckCircle2, Sparkles } from 'lucide-react';
+import { MessageCircleReply, Pin, CheckCircle2, Sparkles, BookmarkPlus, Lock } from 'lucide-react';
+import SchoolIcon from '@mui/icons-material/School';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
+import BookmarkButton from '../../components/BookmarkButton';
+import GlossaryText from '../../components/GlossaryText';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
 import PdfExportButton from '../../components/PdfExportButton';
+import OfflineSaveButton from '../../components/OfflineSaveButton';
 import ClinicalTimeline from '../../components/ClinicalTimeline';
+import AddToCollectionModal from '../../components/AddToCollectionModal';
 
 export default function CaseDiscussion({ id: propId, modalMode, hideDescription }: { id?: string, modalMode?: boolean, hideDescription?: boolean }) {
   const router = useRouter();
@@ -45,6 +50,7 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
   const [activeTab, setActiveTab] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedComment, setSelectedComment] = useState<any>(null);
+  const [collectionModalOpen, setCollectionModalOpen] = useState(false);
 
   const [replyTo, setReplyTo] = useState<any>(null);
   const [replyContent, setReplyContent] = useState('');
@@ -53,6 +59,11 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
   const [openReplies, setOpenReplies] = useState<{[key: string]: boolean}>({});
+
+  // NEW: case-level like state
+  const [isLiked, setIsLiked] = useState(false);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [liking, setLiking] = useState(false);
 
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
   const canModerate = currentUser && ['admin', 'doctor', 'moderator'].includes(currentUser.userType);
@@ -85,13 +96,39 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
         const all = res.data.data.case.comments || [];
         setPinned(all.filter((c: any) => c.pinned));
         setDiscussions(all.filter((c: any) => !c.pinned));
+        // NEW: initialize case-level like state
+        const likes = res.data.data.case.likes || [];
+        setTotalLikes(likes.length);
+        setIsLiked(userId ? likes.some((likeId: any) => likeId.toString() === userId) : false);
         setLoading(false);
       })
-      .catch(() => {
-        setError('Failed to fetch case');
+      .catch((err) => {
+        if (err.response && err.response.status === 403) {
+          setError(err.response.data.message || 'Access Denied');
+        } else {
+          setError('Failed to fetch case');
+        }
         setLoading(false);
       });
   }, [id]);
+
+  // NEW: toggle case-level like
+  const handleToggleCaseLike = async () => {
+    if (liking) return;
+    setLiking(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.post(`/cases/${id}/like`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsLiked(res.data.data.isLiked);
+      setTotalLikes(res.data.data.totalLikes);
+    } catch {
+      setError('Failed to like case');
+    } finally {
+      setLiking(false);
+    }
+  };
 
   const handleLike = async (commentId: string) => {
     try {
@@ -227,7 +264,34 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
       </Box>
     );
   }
-  if (error) return <Container maxWidth="md" sx={{ py: 4 }}><Alert severity="error">{error}</Alert></Container>;
+  
+  if (error) {
+    const isAccessDenied = error.startsWith('Access Denied');
+    return (
+      <Container maxWidth="md" sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Alert 
+          severity="error" 
+          icon={isAccessDenied ? <Lock size={24} /> : undefined}
+          sx={{ mb: 3, width: '100%', py: 2, borderRadius: 3, fontSize: '1.1rem' }}
+        >
+          <Typography variant="subtitle1" fontWeight={700} sx={{ display: 'inline-block', mr: 1 }}>
+            {isAccessDenied ? 'Protected Case' : 'Error'}
+          </Typography>
+          {error}
+        </Alert>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          component={Link}
+          href="/cases"
+          variant="contained"
+          sx={{ mt: 2, borderRadius: 2 }}
+        >
+          Return to Cases Feed
+        </Button>
+      </Container>
+    );
+  }
+
   if (!caseData) return null;
 
   const caseAuthorName = caseData.doctor
@@ -290,7 +354,7 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
 
               return (
                 <Box key={c._id || idx} sx={{ mb: 3 }}>
-                  <Stack direction={isMe ? 'row-reverse' : 'row'} gap={1.5} alignItems="flex-start">
+                  <Stack direction={isMe ? 'row-reverse' : 'row'} gap={1.5} alignItems="flex-start" sx={{ minWidth: 0 }}>
                     <Avatar sx={{ bgcolor: isMe ? 'primary.main' : 'secondary.main', width: 36, height: 36, fontWeight: 700 }}>
                       {initial}
                     </Avatar>
@@ -301,6 +365,7 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                         bgcolor: isMe ? 'primary.light' : '#f1f5f9',
                         color: 'text.primary',
                         maxWidth: '85%',
+                        minWidth: 0,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                       }}
                     >
@@ -345,17 +410,17 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
 
                   {/* Replies nesting */}
                   {c.replies && c.replies.length > 0 && openReplies[c._id] && (
-                    <Box sx={{ mt: 1, ml: 6, pl: 2, borderLeft: '2px solid #cbd5e1' }}>
+                    <Box sx={{ mt: 1, ml: { xs: 2, sm: 6 }, pl: { xs: 1, sm: 2 }, borderLeft: '2px solid #cbd5e1', minWidth: 0 }}>
                       {discussions
                         .filter((r: any) => r.replyTo === c._id)
                         .map((r: any, rIdx: number) => {
                           const replyAuthorName = r.author ? `${r.author.firstName || ''} ${r.author.lastName || ''}`.trim() : 'Unknown';
                           return (
-                            <Box key={r._id || rIdx} sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                            <Box key={r._id || rIdx} sx={{ mt: 1.5, display: 'flex', gap: 1, minWidth: 0 }}>
                               <Avatar sx={{ width: 28, height: 28, bgcolor: 'divider', fontSize: 13, fontWeight: 700 }}>
                                 {replyAuthorName[0]?.toUpperCase()}
                               </Avatar>
-                              <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 3, width: '100%' }}>
+                              <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 3, flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
                                 <Typography variant="body2" fontWeight={600} color="text.primary">
                                   {replyAuthorName} <span style={{ fontSize: '10px', opacity: 0.7 }}>({r.author?.userType})</span>
                                 </Typography>
@@ -450,7 +515,46 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
               <Typography variant="h3" fontWeight={900} color="text.primary" sx={{ flex: 1, letterSpacing: -0.5, mb: 0 }}>
                 {caseData.title}
               </Typography>
-              <PdfExportButton caseData={caseData} discussions={allDiscussions} />
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <BookmarkButton itemType="case" itemId={caseData._id || id as string} />
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  startIcon={<BookmarkPlus size={16} />}
+                  onClick={() => setCollectionModalOpen(true)}
+                  sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, borderColor: 'primary.main', color: 'primary.main' }}
+                >
+                  Save
+                </Button>
+                <OfflineSaveButton caseId={caseData._id || id as string} caseData={caseData} />
+                <PdfExportButton caseData={caseData} discussions={allDiscussions} />
+                <Tooltip title="Create Flashcard from this case">
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SchoolIcon />}
+                    onClick={async () => {
+                      try {
+                        const token = localStorage.getItem('token');
+                        await api.post('/flashcards', {
+                          question: caseData.title,
+                          answer: caseData.specialization
+                            ? `Specialty: ${caseData.specialization}. ${(caseData.description || '').slice(0, 150)}`
+                            : (caseData.description || '').slice(0, 200),
+                          tags: caseData.tags || [],
+                          caseId: caseData._id
+                        }, { headers: { Authorization: `Bearer ${token}` } });
+                        setSuccess('Flashcard created! View it in your deck.');
+                      } catch {
+                        setError('Failed to create flashcard');
+                      }
+                    }}
+                    sx={{ borderRadius: 2, fontWeight: 600, textTransform: 'none' }}
+                  >
+                    Flashcard
+                  </Button>
+                </Tooltip>
+              </Box>
             </Box>
 
             {/* AI Prominent Badges */}
@@ -494,6 +598,15 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                   sx={{ fontWeight: 700, borderRadius: '8px', fontSize: '13px', px: 0.5 }}
                 />
               )}
+              {caseData.verifiedDoctorsOnly && (
+                <Chip
+                  icon={<Lock size={14} />}
+                  label="Verified Doctors Only"
+                  color="error"
+                  variant="filled"
+                  sx={{ fontWeight: 700, borderRadius: '8px', fontSize: '13px', px: 0.5, bgcolor: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca' }}
+                />
+              )}
               {caseData.tags && caseData.tags.map((tag: string) => (
                 <Chip
                   key={tag}
@@ -517,6 +630,20 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                 </Typography>
               </Box>
 
+              {/* NEW: Case-level Like button */}
+              <Tooltip title={isLiked ? 'Unlike this case' : 'Like this case'}>
+                <IconButton
+                  onClick={handleToggleCaseLike}
+                  disabled={liking}
+                  sx={{ color: isLiked ? 'primary.main' : 'text.disabled' }}
+                >
+                  <ThumbUpAltOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+              <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mr: userId && !isSolved ? 0 : 'auto' }}>
+                {totalLikes}
+              </Typography>
+
               {/* Mark as Solved Button */}
               {userId && !isSolved && (
                 <Button
@@ -529,15 +656,39 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                     ml: 'auto',
                     borderRadius: '10px',
                     fontWeight: 700,
-                    bgcolor: '#10b981',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                    textTransform: 'none',
+                    px: 3,
+                    boxShadow: '0 4px 14px 0 rgba(34,197,94,0.39)',
                     '&:hover': {
-                      bgcolor: '#059669',
-                      boxShadow: '0 6px 16px rgba(16, 185, 129, 0.35)',
+                      boxShadow: '0 6px 20px rgba(34,197,94,0.4)',
                     }
                   }}
                 >
                   Mark as Solved
+                </Button>
+              )}
+
+              {/* Virtual Consult Room Button */}
+              {userId && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => router.push(`/cases/${id}/consult`)}
+                  sx={{
+                    ml: isSolved ? 'auto' : 1,
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    px: 3,
+                    bgcolor: '#4f46e5',
+                    boxShadow: '0 4px 14px 0 rgba(79,70,229,0.39)',
+                    '&:hover': {
+                      bgcolor: '#4338ca',
+                      boxShadow: '0 6px 20px rgba(79,70,229,0.4)',
+                    }
+                  }}
+                >
+                  Open Consult Room
                 </Button>
               )}
             </Stack>
@@ -597,7 +748,7 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                   Clinical History & Details
                 </Typography>
                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', color: 'text.primary', fontSize: '1.05rem', lineHeight: 1.7 }}>
-                  {caseData.description}
+                  <GlossaryText text={caseData.description} />
                 </Typography>
               </Box>
 
@@ -618,6 +769,48 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
                             sx={{ height: 260, objectFit: 'cover', cursor: 'pointer', transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.02)' } }}
                             onClick={() => window.open(img, '_blank')}
                           />
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
+
+              {caseData.attachments && caseData.attachments.length > 0 && (
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" fontWeight={800} sx={{ mb: 2, color: 'primary.dark' }}>
+                    Supporting Media
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {caseData.attachments.map((att: any, idx: number) => (
+                      <Grid size={{ xs: 12, sm: att.type === 'audio' ? 12 : 6 }} key={`att-${idx}`}>
+                        <Card sx={{ borderRadius: 3, border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.01)', overflow: 'hidden', p: att.type === 'audio' ? 2 : 0 }}>
+                          {att.type === 'image' && (
+                            <CardMedia
+                              component="img"
+                              image={att.url}
+                              alt={`Clinical supporting media ${idx + 1}`}
+                              sx={{ height: 260, objectFit: 'cover', cursor: 'pointer', transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.02)' } }}
+                              onClick={() => window.open(att.url, '_blank')}
+                            />
+                          )}
+                          {att.type === 'video' && (
+                            <video
+                              src={att.url}
+                              controls
+                              style={{ width: '100%', maxHeight: 260, objectFit: 'contain', backgroundColor: '#000' }}
+                            />
+                          )}
+                          {att.type === 'audio' && (
+                            <Box sx={{ width: '100%' }}>
+                              <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Audio Attachment</Typography>
+                              <audio
+                                src={att.url}
+                                controls
+                                style={{ width: '100%' }}
+                              />
+                            </Box>
+                          )}
                         </Card>
                       </Grid>
                     ))}
@@ -713,6 +906,15 @@ export default function CaseDiscussion({ id: propId, modalMode, hideDescription 
           </Card>
         </Grid>
       </Grid>
+      
+      {/* Add To Collection Modal */}
+      {id && (
+        <AddToCollectionModal 
+          open={collectionModalOpen} 
+          onClose={() => setCollectionModalOpen(false)} 
+          caseId={id as string} 
+        />
+      )}
     </Container>
   );
 }
