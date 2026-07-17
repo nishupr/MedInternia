@@ -24,6 +24,22 @@ const isWebinarExpired = (webinar: { scheduledAt: Date; duration?: number; statu
   return new Date(webinar.scheduledAt) <= now;
 };
 
+const canInteractWithWebinar = (
+  webinar: {
+    host: { toString: () => string };
+    participants: Array<{ user: { toString: () => string } }>;
+  },
+  req: AuthRequest
+) => {
+  const userId = String(req.user!._id);
+
+  return (
+    req.user!.userType === 'admin' ||
+    webinar.host.toString() === userId ||
+    webinar.participants.some(participant => participant.user.toString() === userId)
+  );
+};
+
 const syncExpiredWebinars = async () => {
   const now = new Date();
 
@@ -650,6 +666,12 @@ export const votePoll = async (req: AuthRequest, res: Response) => {
 
     const webinar = await Webinar.findById(id);
     if (!webinar) return res.status(404).json({ success: false, message: 'Webinar not found' });
+    if (!canInteractWithWebinar(webinar, req)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only webinar participants, the host, or admins can interact with this webinar'
+      });
+    }
 
     const poll = webinar.polls.find(p => p._id?.toString() === pollId);
     if (!poll) return res.status(404).json({ success: false, message: 'Poll not found' });
@@ -703,6 +725,12 @@ export const askQuestion = async (req: AuthRequest, res: Response) => {
 
     const webinar = await Webinar.findById(id);
     if (!webinar) return res.status(404).json({ success: false, message: 'Webinar not found' });
+    if (!canInteractWithWebinar(webinar, req)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only webinar participants, the host, or admins can interact with this webinar'
+      });
+    }
 
     webinar.qna.push({
       question,
@@ -731,6 +759,12 @@ export const upvoteQuestion = async (req: AuthRequest, res: Response) => {
 
     const webinar = await Webinar.findById(id);
     if (!webinar) return res.status(404).json({ success: false, message: 'Webinar not found' });
+    if (!canInteractWithWebinar(webinar, req)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only webinar participants, the host, or admins can interact with this webinar'
+      });
+    }
 
     const question = webinar.qna.find(q => q._id?.toString() === qnaId);
     if (!question) return res.status(404).json({ success: false, message: 'Question not found' });
