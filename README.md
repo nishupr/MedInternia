@@ -259,11 +259,15 @@ EMAIL_PORT=587
 npm run dev
 ```
 
+> **Verification:** After starting the backend, open `http://localhost:3000/api` (or the configured API base URL) and confirm the server responds before launching the frontend.
+
 ### Frontend
 
 ```bash
 npm run dev
 ```
+
+> **Verification:** Open `http://localhost:3001` and verify that the landing page loads without console errors and can communicate with the backend API.
 
 ---
 
