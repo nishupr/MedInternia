@@ -130,6 +130,13 @@ export const completeStep = asyncHandler(async (req: AuthRequest, res: Response)
     });
   }
 
+  const nextStepIndex = path.steps.findIndex(
+    (_step, index) => !progress.completedSteps.includes(index)
+  );
+  if (stepIndex !== nextStepIndex) {
+    throw new AppError('Complete the previous steps before continuing', 400);
+  }
+
   const step = path.steps[stepIndex];
   
   // Validate quiz answer if it's a quiz
