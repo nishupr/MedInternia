@@ -14,7 +14,7 @@ export default function UserProfile() {
 
   useEffect(() => {
     if (!id) return;
-    api.get(`/users/${id}/profile`)
+    api.get(`/users/${id}/public`)
       .then(res => {
         setUser(res.data.data.user);
         setLoading(false);
