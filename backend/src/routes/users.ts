@@ -15,7 +15,8 @@ import {
   followUser,
   unfollowUser,
   getConnections,
-  parseResume
+  parseResume,
+  deleteAccount
 } from '../controllers/userController';
 import { toggleBookmark, getSavedItems } from '../controllers/userBookmarksController';
 import multer from 'multer';
@@ -48,6 +49,9 @@ router.get('/:userId/public', authenticate, getPublicProfile);
 
 // Update user profile
 router.put('/:userId/profile', authenticate, updateUserProfile);
+
+// Delete user account
+router.delete('/:userId', authenticate, deleteAccount);
 
 // Get intern scorecard
 router.get('/:userId/scorecard', authenticate, getInternScorecard);
